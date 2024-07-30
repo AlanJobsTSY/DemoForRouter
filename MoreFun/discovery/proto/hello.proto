@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+// 生成go代码的路径
+option go_package = "MoreFun/discovery/proto";
+
+// 名为hello的protobuf的包
+package hello;
+
+// 定义了一个名为 Greeter 的 gRPC 服务。
+// 这个服务包含一个 RPC 方法 SayHello，它接受一个 HelloRequest 消息并返回一个 HelloReply 消息
+service Greeter{
+  rpc SayHello(HelloRequest) returns (HelloReply){}
+}
+
+message HelloRequest{
+  string msg = 1;
+}
+
+message HelloReply{
+  string msg = 1;
+}
