@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option go_package = "MoreFun/proto";
+
+package proto;
+
+service MiniGameRouter {
+  rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse);
+  rpc DiscoverService(DiscoverServiceRequest) returns (DiscoverServiceResponse);
+  rpc SayHello(HelloRequest) returns (HelloResponse);
+}
+
+message Service {
+  string name = 1;
+  string ip = 2;
+  string port = 3;
+  string protocol = 4;
+  string weight = 5;
+}
+
+message RegisterServiceRequest {
+  Service service = 1;
+}
+
+message RegisterServiceResponse {
+  string msg = 1;
+}
+
+message DiscoverServiceRequest {
+  string msg = 1;
+}
+
+message DiscoverServiceResponse {
+  string msg = 1;
+}
+
+message HelloRequest{
+  string msg = 1;
+}
+
+message HelloResponse{
+  string msg = 1;
+}

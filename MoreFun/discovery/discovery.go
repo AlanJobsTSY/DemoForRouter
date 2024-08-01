@@ -26,6 +26,8 @@ func ServiceRegister(s *Service) {
 	var grantLease bool
 	var leaseID clientv3.LeaseID
 
+	//serviceKey := fmt.Sprintf("%s:%s", s.Name, s.Port)
+
 	//查看当前的服务是否注册过
 	getRes, err := cli.Get(context.Background(), s.Name, clientv3.WithCountOnly())
 	if err != nil {
@@ -111,20 +113,7 @@ func WatchServiceName(svcName string) {
 	}
 	if getRes.Count > 0 {
 
-		mp := sliceToMap(getRes.Kvs)
-		s := &Service{}
-		if kv, ok := mp[svcName]; ok {
-			s.Name = string(kv.Value)
-		}
-		if kv, ok := mp[svcName+".IP"]; ok {
-			s.IP = string(kv.Value)
-		}
-		if kv, ok := mp[svcName+".Port"]; ok {
-			s.Port = string(kv.Value)
-		}
-		if kv, ok := mp[svcName+".Protocol"]; ok {
-			s.Protocol = string(kv.Value)
-		}
+		s := kvsToService(svcName, getRes.Kvs)
 		myServices.Lock()
 		myServices.services[svcName] = s
 		myServices.Unlock()
@@ -164,10 +153,19 @@ func WatchServiceName(svcName string) {
 	}
 }
 
-func sliceToMap(list []*mvccpb.KeyValue) map[string]*mvccpb.KeyValue {
-	mp := make(map[string]*mvccpb.KeyValue, 0)
-	for _, item := range list {
-		mp[string(item.Key)] = item
+func kvsToService(svcName string, kvs []*mvccpb.KeyValue) *Service {
+	s := &Service{}
+	for _, kv := range kvs {
+		switch string(kv.Key) {
+		case svcName:
+			s.Name = string(kv.Value)
+		case svcName + ".IP":
+			s.IP = string(kv.Value)
+		case svcName + ".Port":
+			s.Port = string(kv.Value)
+		case svcName + ".Protocol":
+			s.Protocol = string(kv.Value)
+		}
 	}
-	return mp
+	return s
 }

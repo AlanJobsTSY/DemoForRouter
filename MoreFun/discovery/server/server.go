@@ -16,12 +16,15 @@ var (
 	port = flag.Int("port", 50051, "")
 )
 
+var times int = 0
+
 type server struct {
 	pb.UnimplementedGreeterServer
 }
 
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	fmt.Printf("Recv Client msg:%v \n", in.Msg)
+	times++
+	fmt.Printf("Recv Client msg:%v %d\n", in.Msg, times)
 	return &pb.HelloReply{
 		Msg: "hello client",
 	}, nil

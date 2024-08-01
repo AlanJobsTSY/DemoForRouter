@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="" />
+    <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discovery/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/client/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discovery/discovery.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/discovery.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discovery/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/server/server.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,6 +23,9 @@
     </option>
   </component>
   <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -35,6 +43,7 @@
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "git-widget-placeholder": "main",
     "go.import.settings.migrated": "true",
     "last_opened_file_path": "C:/Users/shenytong",
     "node.js.detected.package.eslint": "true",
