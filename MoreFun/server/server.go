@@ -1,7 +1,9 @@
 package main
 
 import (
+	"MoreFun/etcd"
 	pb "MoreFun/proto"
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -9,16 +11,18 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
+	"os"
+	"os/exec"
 	"strconv"
+	"time"
 )
 
 var (
-	name       = flag.String("name", "A", "")
-	ip         = flag.String("ip", "localhost", "")
-	port       = flag.Int("port", 50050, "The server port")
-	protocol   = flag.String("protocol", "grpc", "The server protocol")
-	weight     = flag.String("weight", "1", "")
-	needServer = flag.String("needServer", "", "")
+	name     = flag.String("name", "A", "")
+	ip       = flag.String("ip", "localhost", "")
+	port     = flag.Int("port", 50050, "The server port")
+	protocol = flag.String("protocol", "grpc", "The server protocol")
+	weight   = flag.String("weight", "1", "")
 )
 
 type MiniGameRouterServer struct {
@@ -26,21 +30,20 @@ type MiniGameRouterServer struct {
 }
 
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	fmt.Printf("Recv Client msg:%v \n", req.Msg)
+	fmt.Printf("Recv msg:%v \n", req.Msg)
 	return &pb.HelloResponse{
-		Msg: fmt.Sprintf("Hello, I am %s:%s", *name, strconv.Itoa(*port)),
+		Msg: fmt.Sprintf("Hello, I am %s:%d", *name, *port),
 	}, nil
 }
+
 func DiscoverService(client pb.MiniGameRouterClient, serviceName string) (*pb.DiscoverServiceResponse, error) {
-	needServerReq := &pb.DiscoverServiceRequest{
-		Msg: serviceName,
+	req := &pb.DiscoverServiceRequest{
+		FromMsg: fmt.Sprintf("%s:%d", *name, *port),
+		ToMsg:   serviceName,
 	}
-	helloRes, err := client.DiscoverService(context.Background(), needServerReq)
-	if err != nil {
-		return nil, fmt.Errorf("could not discover service: %v", err)
-	}
-	return helloRes, nil
+	return client.DiscoverService(context.Background(), req)
 }
+
 func RegisterService(client pb.MiniGameRouterClient) (*pb.RegisterServiceResponse, error) {
 	req := &pb.RegisterServiceRequest{
 		Service: &pb.Service{
@@ -51,53 +54,84 @@ func RegisterService(client pb.MiniGameRouterClient) (*pb.RegisterServiceRespons
 			Weight:   *weight,
 		},
 	}
-	rRes, err := client.RegisterService(context.Background(), req)
-	if err != nil {
-		return nil, fmt.Errorf("could not register service: %v", err)
-	}
-	return rRes, nil
+	return client.RegisterService(context.Background(), req)
 }
-func main() {
-	flag.Parse()
 
-	//连接sidecar
-	addr := fmt.Sprintf("localhost:%s", strconv.Itoa(*port+1))
-	fmt.Println(addr)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
-	c := pb.NewMiniGameRouterClient(conn)
+func startSidecar(port int) error {
+	sidecarPort := port + 1
+	cmd := exec.Command("go", "run", "./sidecar/sidecar.go", "--port", strconv.Itoa(sidecarPort))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Start()
+}
 
-	//	注册自己的服务
-	rRes, err := RegisterService(c)
-	if err != nil {
-		log.Fatalf("could not register service: %v", err)
-	}
-
-	log.Printf("Response: %s", rRes.Msg)
-
-	// 请求别人的服务
-	if *needServer != "" {
-		helloRes, err := DiscoverService(c, *needServer)
-		if err != nil {
-			log.Fatalf("could not register service: %v", err)
-		}
-		log.Printf("Response: %s", helloRes.Msg)
-	}
-
-	//监听sidecar的请求
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+func startGRPCServer(port int) {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
-	log.Printf("Server is listening on port %d", *port)
+	log.Printf("Server is listening on port %d", port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
-	log.Printf("tsytsytsy")
+}
+
+func connectToSidecar(port int) (*grpc.ClientConn, pb.MiniGameRouterClient, error) {
+	addr := fmt.Sprintf("localhost:%d", port+1)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to connect to sidecar: %v", err)
+	}
+	client := pb.NewMiniGameRouterClient(conn)
+	return conn, client, nil
+}
+
+func main() {
+	flag.Parse()
+
+	// 启动 sidecar
+	if err := startSidecar(*port); err != nil {
+		log.Fatalf("Failed to start sidecar: %v", err)
+	}
+
+	// 等待 sidecar 启动完成
+	time.Sleep(etcd.DialTimeout)
+
+	// 启动 gRPC 服务器
+	go startGRPCServer(*port)
+
+	// 连接 sidecar
+	conn, client, err := connectToSidecar(*port)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	defer conn.Close()
+
+	// 注册自己的服务
+	rRes, err := RegisterService(client)
+	if err != nil {
+		log.Fatalf("Could not register service: %v", err)
+	}
+	log.Printf("Response: %s", rRes.Msg)
+
+	// 请求别人的服务
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter the name of the service you need (or press Ctrl+C to exit):")
+	for scanner.Scan() {
+		serviceName := scanner.Text()
+		if serviceName == "" {
+			continue
+		}
+		helloRes, err := DiscoverService(client, serviceName)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			continue
+		}
+		log.Printf("Recv msg: %s", helloRes.Msg)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading from stdin: %v", err)
+	}
 }

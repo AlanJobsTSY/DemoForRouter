@@ -27,7 +27,8 @@ message RegisterServiceResponse {
 }
 
 message DiscoverServiceRequest {
-  string msg = 1;
+  string from_msg = 1 ;
+  string to_msg = 2;
 }
 
 message DiscoverServiceResponse {

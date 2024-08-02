@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
-	"strconv"
 	"strings"
+	"sync"
 
 	"MoreFun/etcd"
 	pb "MoreFun/proto"
@@ -17,16 +17,71 @@ import (
 )
 
 var (
-	port = flag.Int("port", 50051, "The server port")
+	port = flag.Int("port", 50051, "The sidecar port")
 )
 
 type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
+type IsDiscovered struct {
+	isDiscovered map[string]bool
+	sync.RWMutex
+}
+
+type ServicesStorage struct {
+	servicesStorage map[string]map[string]string
+	sync.RWMutex
+}
+
+var myIsDiscovered = &IsDiscovered{
+	isDiscovered: map[string]bool{},
+}
+
+var myServicesStorage = &ServicesStorage{
+	servicesStorage: map[string]map[string]string{},
+}
+
+func WatchServiceName(serviceName string) {
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+	keepAliveCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	getRes, err := cli.Get(keepAliveCtx, serviceName, clientv3.WithPrefix())
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if getRes.Count > 0 {
+		myServicesStorage.Lock()
+		for _, kv := range getRes.Kvs {
+			log.Printf("%s_%s_%s", serviceName, string(kv.Key), string(kv.Value))
+			myServicesStorage.servicesStorage[serviceName][string(kv.Key)] = string(kv.Value)
+		}
+		myServicesStorage.Unlock()
+	}
+	watchChannel := cli.Watch(keepAliveCtx, serviceName, clientv3.WithPrefix())
+	for watchRes := range watchChannel {
+		//log.Println("working?????????")
+		for _, ev := range watchRes.Events {
+			//log.Printf("%s__%s__%s__%s", ev.Type, serviceName, string(ev.Kv.Key), string(ev.Kv.Value))
+			myServicesStorage.Lock()
+			switch ev.Type {
+			//删除myServicesStorage中的键值对
+			case clientv3.EventTypeDelete:
+				delete(myServicesStorage.servicesStorage[serviceName], string(ev.Kv.Key))
+			//添加myServicesStorage中的键值对
+			case clientv3.EventTypePut:
+				myServicesStorage.servicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
+			}
+			myServicesStorage.Unlock()
+		}
+
+	}
+}
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
-
+	defer cli.Close()
 	var grantLease bool
 	var leaseID clientv3.LeaseID
 
@@ -71,6 +126,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	// 租约保活机制
 	if grantLease {
 		go func() {
+			cli := etcd.NewEtcdCli()
 			defer cli.Close()
 
 			keepAliveCtx, cancel := context.WithCancel(context.Background())
@@ -80,8 +136,8 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 			if err != nil {
 				log.Fatalf("Failed to keep lease alive: %v", err)
 			}
-			for lease := range leaseKeepAlive {
-				fmt.Printf("leaseID:%x, ttl:%d\n", lease.ID, lease.TTL)
+			for range leaseKeepAlive {
+				//fmt.Printf("leaseID:%x, ttl:%d\n", lease.ID, lease.TTL)
 			}
 		}()
 	}
@@ -96,12 +152,25 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	//路由选择 needtodo
-	getRes, err := cli.Get(context.Background(), req.Msg, clientv3.WithPrefix())
+	if !myIsDiscovered.isDiscovered[req.ToMsg] {
+		//myIsDiscovered.Lock()
+		myIsDiscovered.isDiscovered[req.ToMsg] = true
+		//myIsDiscovered.Unlock()
+		myServicesStorage.servicesStorage[req.ToMsg] = make(map[string]string)
+		go WatchServiceName(req.ToMsg)
+	}
+	//打印req.ToMsg类的服务
+	var index int = 0
+	for key, value := range myServicesStorage.servicesStorage[req.ToMsg] {
+		index += 1
+		log.Printf("%d_%s_%s", index, key, value)
+	}
+	getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
 	if err != nil {
 		log.Fatalln(err)
 	}
 	if len(getRes.Kvs) == 0 {
-		return nil, fmt.Errorf("no key found for %s", req.Msg)
+		return nil, fmt.Errorf("no key found for %s", req.ToMsg)
 	}
 	value := string(getRes.Kvs[0].Value)
 	parts := strings.Split(value, ":")
@@ -109,39 +178,40 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	//连接另外一个sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalln(err)
+		return nil, fmt.Errorf("Failed to connnect another sidecar: %s", err)
 	}
 	defer conn.Close()
 
 	c := pb.NewMiniGameRouterClient(conn)
 
 	helloReq := &pb.HelloRequest{
-		Msg: "hi",
+		Msg: req.FromMsg,
 	}
-	rRes, err := c.SayHello(context.Background(), helloReq)
+	helloRes, err := c.SayHello(ctx, helloReq)
 	if err != nil {
-		log.Fatalf("could not SayHello: %v", err)
+		return nil, fmt.Errorf("Failed to grpc another sidecar: %s", err)
 	}
 
 	return &pb.DiscoverServiceResponse{
-		Msg: rRes.Msg,
+		Msg: helloRes.Msg,
 	}, nil
 
 }
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	addr := fmt.Sprintf("localhost:%s", strconv.Itoa(*port-1))
+	addr := fmt.Sprintf("localhost:%d", *port-1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalln(err)
+		return nil, fmt.Errorf("Sidecar could not connect its server %s", err)
 	}
 	defer conn.Close()
+
 	c := pb.NewMiniGameRouterClient(conn)
 	helloReq := &pb.HelloRequest{
-		Msg: fmt.Sprintf("Hello, I am SideCar:%s", *port),
+		Msg: fmt.Sprintf("Hello, I am %s", req.Msg),
 	}
-	rRes, err := c.SayHello(context.Background(), helloReq)
+	rRes, err := c.SayHello(ctx, helloReq)
 	if err != nil {
-		log.Fatalf("could not SayHello: %v", err)
+		return nil, fmt.Errorf("Failed to grpc its server: %s", err)
 	}
 	return &pb.HelloResponse{
 		Msg: rRes.Msg,
@@ -155,7 +225,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
-	log.Printf("Server is listening on port %d", *port)
+	log.Printf("Sidecar is listening on port %d", *port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
