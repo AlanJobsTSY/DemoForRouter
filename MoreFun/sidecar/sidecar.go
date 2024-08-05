@@ -1,19 +1,17 @@
 package main
 
 import (
+	"MoreFun/etcd"
+	pb "MoreFun/proto"
+	"MoreFun/routerStrategy"
 	"context"
 	"flag"
 	"fmt"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
-	"strings"
-	"sync"
-
-	"MoreFun/etcd"
-	pb "MoreFun/proto"
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -24,22 +22,13 @@ type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
-type IsDiscovered struct {
-	isDiscovered map[string]bool
-	sync.RWMutex
+var myIsDiscovered = &routerStrategy.IsDiscovered{
+	IsDiscovered: map[string]bool{},
 }
 
-type ServicesStorage struct {
-	servicesStorage map[string]map[string]string
-	sync.RWMutex
-}
-
-var myIsDiscovered = &IsDiscovered{
-	isDiscovered: map[string]bool{},
-}
-
-var myServicesStorage = &ServicesStorage{
-	servicesStorage: map[string]map[string]string{},
+var myServicesStorage = &routerStrategy.ServicesStorage{
+	ServicesStorage: map[string]map[string]string{},
+	CurrentWeight:   make(map[string]map[string]int),
 }
 
 func WatchServiceName(serviceName string) {
@@ -47,19 +36,7 @@ func WatchServiceName(serviceName string) {
 	defer cli.Close()
 	keepAliveCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	getRes, err := cli.Get(keepAliveCtx, serviceName, clientv3.WithPrefix())
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	if getRes.Count > 0 {
-		myServicesStorage.Lock()
-		for _, kv := range getRes.Kvs {
-			log.Printf("%s_%s_%s", serviceName, string(kv.Key), string(kv.Value))
-			myServicesStorage.servicesStorage[serviceName][string(kv.Key)] = string(kv.Value)
-		}
-		myServicesStorage.Unlock()
-	}
 	watchChannel := cli.Watch(keepAliveCtx, serviceName, clientv3.WithPrefix())
 	for watchRes := range watchChannel {
 		//log.Println("working?????????")
@@ -69,10 +46,10 @@ func WatchServiceName(serviceName string) {
 			switch ev.Type {
 			//删除myServicesStorage中的键值对
 			case clientv3.EventTypeDelete:
-				delete(myServicesStorage.servicesStorage[serviceName], string(ev.Kv.Key))
+				delete(myServicesStorage.ServicesStorage[serviceName], string(ev.Kv.Key))
 			//添加myServicesStorage中的键值对
 			case clientv3.EventTypePut:
-				myServicesStorage.servicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
+				myServicesStorage.ServicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
 			}
 			myServicesStorage.Unlock()
 		}
@@ -152,29 +129,52 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	//路由选择 needtodo
-	if !myIsDiscovered.isDiscovered[req.ToMsg] {
-		//myIsDiscovered.Lock()
-		myIsDiscovered.isDiscovered[req.ToMsg] = true
-		//myIsDiscovered.Unlock()
-		myServicesStorage.servicesStorage[req.ToMsg] = make(map[string]string)
+	if !myIsDiscovered.IsDiscovered[req.ToMsg] {
+		log.Println("FIRST TIME")
+		//routerStrategy.MyIsDiscovered.Lock()
+		myIsDiscovered.IsDiscovered[req.ToMsg] = true
+		//routerStrategy.MyIsDiscovered.Unlock()
+		myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
+		getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		if getRes.Count > 0 {
+			myServicesStorage.Lock()
+			for _, kv := range getRes.Kvs {
+				//log.Printf("%s_%s_%s", req.ToMsg, string(kv.Key), string(kv.Value))
+				myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
+			}
+			myServicesStorage.Unlock()
+		}
 		go WatchServiceName(req.ToMsg)
 	}
 	//打印req.ToMsg类的服务
 	var index int = 0
-	for key, value := range myServicesStorage.servicesStorage[req.ToMsg] {
+	for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
 		index += 1
 		log.Printf("%d_%s_%s", index, key, value)
 	}
-	getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
-	if err != nil {
-		log.Fatalln(err)
+	/*
+		getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if len(getRes.Kvs) == 0 {
+			return nil, fmt.Errorf("no key found for %s", req.ToMsg)
+		}
+		value := string(getRes.Kvs[0].Value)
+		parts := strings.Split(value, ":")
+		addr := fmt.Sprintf("%s:%s", parts[1], parts[2])
+	*/
+
+	config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
+	if !ok {
+		return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
 	}
-	if len(getRes.Kvs) == 0 {
-		return nil, fmt.Errorf("no key found for %s", req.ToMsg)
-	}
-	value := string(getRes.Kvs[0].Value)
-	parts := strings.Split(value, ":")
-	addr := fmt.Sprintf("%s:%s", parts[1], parts[2])
+	addr := routerStrategy.GetAddr(myServicesStorage, config)
+	//log.Printf("tsy__addr:%s", addr)
 	//连接另外一个sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

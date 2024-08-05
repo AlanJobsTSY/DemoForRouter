@@ -18,19 +18,22 @@ import (
 )
 
 var (
-	name     = flag.String("name", "A", "")
-	ip       = flag.String("ip", "localhost", "")
+	name     = flag.String("name", "A", "The server name")
+	ip       = flag.String("ip", "localhost", "The server ip")
 	port     = flag.Int("port", 50050, "The server port")
 	protocol = flag.String("protocol", "grpc", "The server protocol")
-	weight   = flag.String("weight", "1", "")
+	weight   = flag.String("weight", "1", "The server weight")
 )
 
 type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
+var times int = 0
+
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	fmt.Printf("Recv msg:%v \n", req.Msg)
+	times += 1
+	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, times)
 	return &pb.HelloResponse{
 		Msg: fmt.Sprintf("Hello, I am %s:%d", *name, *port),
 	}, nil
