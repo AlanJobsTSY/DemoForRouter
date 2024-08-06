@@ -17,6 +17,7 @@ import (
 	"time"
 )
 
+// 定义命令行参数
 var (
 	name     = flag.String("name", "A", "The server name")
 	ip       = flag.String("ip", "localhost", "The server ip")
@@ -25,12 +26,14 @@ var (
 	weight   = flag.String("weight", "1", "The server weight")
 )
 
+// MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
 type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
 var times int = 0
 
+// SayHello 实现了 gRPC 的 SayHello 方法
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
 	times += 1
 	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, times)
@@ -39,6 +42,7 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 	}, nil
 }
 
+// DiscoverService 发现服务
 func DiscoverService(client pb.MiniGameRouterClient, serviceName string) (*pb.DiscoverServiceResponse, error) {
 	req := &pb.DiscoverServiceRequest{
 		FromMsg: fmt.Sprintf("%s:%d", *name, *port),
@@ -47,6 +51,7 @@ func DiscoverService(client pb.MiniGameRouterClient, serviceName string) (*pb.Di
 	return client.DiscoverService(context.Background(), req)
 }
 
+// RegisterService 注册服务
 func RegisterService(client pb.MiniGameRouterClient) (*pb.RegisterServiceResponse, error) {
 	req := &pb.RegisterServiceRequest{
 		Service: &pb.Service{
@@ -60,6 +65,7 @@ func RegisterService(client pb.MiniGameRouterClient) (*pb.RegisterServiceRespons
 	return client.RegisterService(context.Background(), req)
 }
 
+// startSidecar 启动 sidecar
 func startSidecar(port int) error {
 	sidecarPort := port + 1
 	cmd := exec.Command("go", "run", "./sidecar/sidecar.go", "--port", strconv.Itoa(sidecarPort))
@@ -68,6 +74,7 @@ func startSidecar(port int) error {
 	return cmd.Start()
 }
 
+// startGRPCServer 启动 gRPC 服务器
 func startGRPCServer(port int) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -81,6 +88,7 @@ func startGRPCServer(port int) {
 	}
 }
 
+// connectToSidecar 连接到 sidecar
 func connectToSidecar(port int) (*grpc.ClientConn, pb.MiniGameRouterClient, error) {
 	addr := fmt.Sprintf("localhost:%d", port+1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))

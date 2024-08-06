@@ -14,23 +14,28 @@ import (
 	"net"
 )
 
+// 定义命令行参数，用于指定 sidecar 的端口
 var (
 	port = flag.Int("port", 50051, "The sidecar port")
 )
 
+// MiniGameRouterServer 实现了 pb.UnimplementedMiniGameRouterServer 接口
 type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
+// 全局变量，用于存储服务发现状态
 var myIsDiscovered = &routerStrategy.IsDiscovered{
 	IsDiscovered: map[string]bool{},
 }
 
+// 全局变量，用于存储服务信息
 var myServicesStorage = &routerStrategy.ServicesStorage{
 	ServicesStorage: map[string]map[string]string{},
 	CurrentWeight:   make(map[string]map[string]int),
 }
 
+// 监听服务名称的变化
 func WatchServiceName(serviceName string) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
@@ -39,23 +44,22 @@ func WatchServiceName(serviceName string) {
 
 	watchChannel := cli.Watch(keepAliveCtx, serviceName, clientv3.WithPrefix())
 	for watchRes := range watchChannel {
-		//log.Println("working?????????")
 		for _, ev := range watchRes.Events {
-			//log.Printf("%s__%s__%s__%s", ev.Type, serviceName, string(ev.Kv.Key), string(ev.Kv.Value))
 			myServicesStorage.Lock()
 			switch ev.Type {
-			//删除myServicesStorage中的键值对
+			// 删除 myServicesStorage 中的键值对
 			case clientv3.EventTypeDelete:
 				delete(myServicesStorage.ServicesStorage[serviceName], string(ev.Kv.Key))
-			//添加myServicesStorage中的键值对
+			// 添加 myServicesStorage 中的键值对
 			case clientv3.EventTypePut:
 				myServicesStorage.ServicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
 			}
 			myServicesStorage.Unlock()
 		}
-
 	}
 }
+
+// 注册服务
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
@@ -124,16 +128,15 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}, nil
 }
 
+// 服务发现
 func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.DiscoverServiceRequest) (*pb.DiscoverServiceResponse, error) {
-	//服务发现
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
-	//路由选择 needtodo
+
+	// 如果服务未被发现过，则进行服务发现
 	if !myIsDiscovered.IsDiscovered[req.ToMsg] {
 		log.Println("FIRST TIME")
-		//routerStrategy.MyIsDiscovered.Lock()
 		myIsDiscovered.IsDiscovered[req.ToMsg] = true
-		//routerStrategy.MyIsDiscovered.Unlock()
 		myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
 		getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
 		if err != nil {
@@ -143,42 +146,31 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		if getRes.Count > 0 {
 			myServicesStorage.Lock()
 			for _, kv := range getRes.Kvs {
-				//log.Printf("%s_%s_%s", req.ToMsg, string(kv.Key), string(kv.Value))
 				myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
 			}
 			myServicesStorage.Unlock()
 		}
 		go WatchServiceName(req.ToMsg)
 	}
-	//打印req.ToMsg类的服务
+
+	// 打印 req.ToMsg 类的服务
 	var index int = 0
 	for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
 		index += 1
 		log.Printf("%d_%s_%s", index, key, value)
 	}
-	/*
-		getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if len(getRes.Kvs) == 0 {
-			return nil, fmt.Errorf("no key found for %s", req.ToMsg)
-		}
-		value := string(getRes.Kvs[0].Value)
-		parts := strings.Split(value, ":")
-		addr := fmt.Sprintf("%s:%s", parts[1], parts[2])
-	*/
 
+	// 获取服务配置
 	config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
 	if !ok {
 		return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
 	}
 	addr := routerStrategy.GetAddr(myServicesStorage, config)
-	//log.Printf("tsy__addr:%s", addr)
-	//连接另外一个sidecar
+
+	// 连接另外一个 sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connnect another sidecar: %s", err)
+		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
 	}
 	defer conn.Close()
 
@@ -195,13 +187,14 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	return &pb.DiscoverServiceResponse{
 		Msg: helloRes.Msg,
 	}, nil
-
 }
+
+// 简单的问候服务
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
 	addr := fmt.Sprintf("localhost:%d", *port-1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("Sidecar could not connect its server %s", err)
+		return nil, fmt.Errorf("Sidecar could not connect to its server %s", err)
 	}
 	defer conn.Close()
 
@@ -217,6 +210,8 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 		Msg: rRes.Msg,
 	}, nil
 }
+
+// 主函数，启动 gRPC 服务器
 func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))

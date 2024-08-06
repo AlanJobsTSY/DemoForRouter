@@ -1,44 +1,69 @@
 syntax = "proto3";
 
+// 指定生成的 Go 代码的包路径
 option go_package = "MoreFun/proto";
 
+// 定义 proto 包名
 package proto;
 
+// MiniGameRouter 服务定义
 service MiniGameRouter {
+  // 注册服务
   rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse);
+  // 发现服务
   rpc DiscoverService(DiscoverServiceRequest) returns (DiscoverServiceResponse);
+  // 简单的问候服务
   rpc SayHello(HelloRequest) returns (HelloResponse);
 }
 
+// 服务信息
 message Service {
+  // 服务名称
   string name = 1;
+  // 服务 IP 地址
   string ip = 2;
+  // 服务端口
   string port = 3;
+  // 服务协议
   string protocol = 4;
+  // 服务权重
   string weight = 5;
 }
 
+// 注册服务请求
 message RegisterServiceRequest {
+  // 服务信息
   Service service = 1;
 }
 
+// 注册服务响应
 message RegisterServiceResponse {
+  // 响应消息
   string msg = 1;
 }
 
+// 发现服务请求
 message DiscoverServiceRequest {
-  string from_msg = 1 ;
+  // 起始消息
+  string from_msg = 1;
+  // 目标消息
   string to_msg = 2;
 }
 
+// 发现服务响应
 message DiscoverServiceResponse {
+  // 响应消息
   string msg = 1;
 }
 
-message HelloRequest{
+// 问候请求
+message HelloRequest {
+  // 问候消息
   string msg = 1;
 }
 
-message HelloResponse{
+// 问候响应
+message HelloResponse {
+  // 响应消息
   string msg = 1;
 }
