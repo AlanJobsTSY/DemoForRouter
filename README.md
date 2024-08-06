@@ -36,7 +36,7 @@ docker exec -it etcd0 bash
 etcdctl endpoint status --cluster -w table
 ```
 
-![7@F%24J00XR[_BWYW1IY]@H](C:\Users\shenytong\AppData\Roaming\Tencent\QQ\Temp\7@F%24J00XR[_BWYW1IY]@H.png)
+![etcd集群](.\pic\etcd集群.png)
 
 ### 2. 启动服务
 
