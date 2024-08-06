@@ -4,6 +4,8 @@
 // - protoc             v5.27.2
 // source: minigame_router.proto
 
+// 定义 proto 包名
+
 package proto
 
 import (
@@ -27,9 +29,14 @@ const (
 // MiniGameRouterClient is the client API for MiniGameRouter service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// MiniGameRouter 服务定义
 type MiniGameRouterClient interface {
+	// 注册服务
 	RegisterService(ctx context.Context, in *RegisterServiceRequest, opts ...grpc.CallOption) (*RegisterServiceResponse, error)
+	// 发现服务
 	DiscoverService(ctx context.Context, in *DiscoverServiceRequest, opts ...grpc.CallOption) (*DiscoverServiceResponse, error)
+	// 简单的问候服务
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 }
 
@@ -74,9 +81,14 @@ func (c *miniGameRouterClient) SayHello(ctx context.Context, in *HelloRequest, o
 // MiniGameRouterServer is the server API for MiniGameRouter service.
 // All implementations must embed UnimplementedMiniGameRouterServer
 // for forward compatibility.
+//
+// MiniGameRouter 服务定义
 type MiniGameRouterServer interface {
+	// 注册服务
 	RegisterService(context.Context, *RegisterServiceRequest) (*RegisterServiceResponse, error)
+	// 发现服务
 	DiscoverService(context.Context, *DiscoverServiceRequest) (*DiscoverServiceResponse, error)
+	// 简单的问候服务
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	mustEmbedUnimplementedMiniGameRouterServer()
 }

@@ -48,6 +48,8 @@ message DiscoverServiceRequest {
   string from_msg = 1;
   // 目标消息
   string to_msg = 2;
+  // 指定目标
+  string fixed_router_addr=3;
 }
 
 // 发现服务响应

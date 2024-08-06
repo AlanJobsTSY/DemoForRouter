@@ -132,41 +132,45 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.DiscoverServiceRequest) (*pb.DiscoverServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
-
-	// 如果服务未被发现过，则进行服务发现
-	if !myIsDiscovered.IsDiscovered[req.ToMsg] {
-		log.Println("FIRST TIME")
-		myIsDiscovered.IsDiscovered[req.ToMsg] = true
-		myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
-		getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if getRes.Count > 0 {
-			myServicesStorage.Lock()
-			for _, kv := range getRes.Kvs {
-				myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
+	var addr string
+	if req.FixedRouterAddr == "" {
+		// 如果服务未被发现过，则进行服务发现
+		if !myIsDiscovered.IsDiscovered[req.ToMsg] {
+			log.Println("FIRST TIME")
+			myIsDiscovered.IsDiscovered[req.ToMsg] = true
+			myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
+			getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
+			if err != nil {
+				log.Fatalln(err)
 			}
-			myServicesStorage.Unlock()
+
+			if getRes.Count > 0 {
+				myServicesStorage.Lock()
+				for _, kv := range getRes.Kvs {
+					myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
+				}
+				myServicesStorage.Unlock()
+			}
+			go WatchServiceName(req.ToMsg)
 		}
-		go WatchServiceName(req.ToMsg)
-	}
 
-	// 打印 req.ToMsg 类的服务
-	var index int = 0
-	for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
-		index += 1
-		log.Printf("%d_%s_%s", index, key, value)
-	}
+		// 打印 req.ToMsg 类的服务
+		var index int = 0
+		for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
+			index += 1
+			log.Printf("%d_%s_%s", index, key, value)
+		}
 
-	// 获取服务配置
-	config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
-	if !ok {
-		return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
+		// 获取服务配置
+		config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
+		if !ok {
+			return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
+		}
+		addr = routerStrategy.GetAddr(myServicesStorage, config)
+	} else {
+		addr = req.FixedRouterAddr
 	}
-	addr := routerStrategy.GetAddr(myServicesStorage, config)
-
+	//log.Printf("%s,  %s", req.FixedRouterAddr, addr)
 	// 连接另外一个 sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -183,7 +187,6 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	if err != nil {
 		return nil, fmt.Errorf("Failed to grpc another sidecar: %s", err)
 	}
-
 	return &pb.DiscoverServiceResponse{
 		Msg: helloRes.Msg,
 	}, nil

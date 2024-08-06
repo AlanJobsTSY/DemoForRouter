@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -43,10 +44,11 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 }
 
 // DiscoverService 发现服务
-func DiscoverService(client pb.MiniGameRouterClient, serviceName string) (*pb.DiscoverServiceResponse, error) {
+func DiscoverService(client pb.MiniGameRouterClient, serviceName string, fixedRouter string) (*pb.DiscoverServiceResponse, error) {
 	req := &pb.DiscoverServiceRequest{
-		FromMsg: fmt.Sprintf("%s:%d", *name, *port),
-		ToMsg:   serviceName,
+		FromMsg:         fmt.Sprintf("%s:%d", *name, *port),
+		ToMsg:           serviceName,
+		FixedRouterAddr: fixedRouter,
 	}
 	return client.DiscoverService(context.Background(), req)
 }
@@ -131,11 +133,30 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Enter the name of the service you need (or press Ctrl+C to exit):")
 	for scanner.Scan() {
-		serviceName := scanner.Text()
-		if serviceName == "" {
+		var serviceName string
+		var fixedRouterAddr string
+		if scanner.Text() == "" {
 			continue
 		}
-		helloRes, err := DiscoverService(client, serviceName)
+		parts := strings.Split(scanner.Text(), " ")
+		if len(parts) == 1 {
+			serviceName = parts[0]
+			fixedRouterAddr = ""
+		} else {
+			serviceName = parts[0]
+			partsFixedRouterAddr := strings.Split(parts[1], ":")
+			if len(partsFixedRouterAddr) != 2 {
+				log.Printf("Wrong fomat for fixedRouterAddr")
+				continue
+			}
+			portInt, err := strconv.Atoi(partsFixedRouterAddr[1])
+			if err != nil {
+				log.Printf("Wrong port")
+				continue
+			}
+			fixedRouterAddr = fmt.Sprintf("%s:%d", partsFixedRouterAddr[0], portInt+1)
+		}
+		helloRes, err := DiscoverService(client, serviceName, fixedRouterAddr)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			continue
