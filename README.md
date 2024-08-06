@@ -36,7 +36,7 @@ docker exec -it etcd0 bash
 etcdctl endpoint status --cluster -w table
 ```
 
-![etcd集群](DemoForRouter\pic\etcd集群.png)
+
 
 ### 2. 启动服务
 
