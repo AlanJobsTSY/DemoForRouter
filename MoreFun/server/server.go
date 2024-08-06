@@ -131,14 +131,14 @@ func main() {
 
 	// 请求别人的服务
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter the name of the service you need (or press Ctrl+C to exit):")
+	fmt.Println("Enter the name of the service you need and the 'ip:port' for the service if your know it (or press Ctrl+C to exit):")
 	for scanner.Scan() {
 		var serviceName string
 		var fixedRouterAddr string
 		if scanner.Text() == "" {
 			continue
 		}
-		parts := strings.Split(scanner.Text(), " ")
+		parts := strings.Fields(scanner.Text())
 		if len(parts) == 1 {
 			serviceName = parts[0]
 			fixedRouterAddr = ""
@@ -146,7 +146,7 @@ func main() {
 			serviceName = parts[0]
 			partsFixedRouterAddr := strings.Split(parts[1], ":")
 			if len(partsFixedRouterAddr) != 2 {
-				log.Printf("Wrong fomat for fixedRouterAddr")
+				log.Printf("Wrong fomat for 'ip:port'")
 				continue
 			}
 			portInt, err := strconv.Atoi(partsFixedRouterAddr[1])
