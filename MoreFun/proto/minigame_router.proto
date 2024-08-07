@@ -28,6 +28,8 @@ message Service {
   string protocol = 4;
   // 服务权重
   string weight = 5;
+  // 有无状态服务
+  string status =6;
 }
 
 // 注册服务请求
@@ -50,6 +52,8 @@ message DiscoverServiceRequest {
   string to_msg = 2;
   // 指定目标
   string fixed_router_addr=3;
+  //status
+  string status=4;
 }
 
 // 发现服务响应

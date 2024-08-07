@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/emirpasic/gods/maps/treemap"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -33,6 +34,7 @@ var myIsDiscovered = &routerStrategy.IsDiscovered{
 var myServicesStorage = &routerStrategy.ServicesStorage{
 	ServicesStorage: map[string]map[string]string{},
 	CurrentWeight:   make(map[string]map[string]int),
+	HashRing:        treemap.NewWithIntComparator(),
 }
 
 // 监听服务名称的变化
@@ -50,9 +52,15 @@ func WatchServiceName(serviceName string) {
 			// 删除 myServicesStorage 中的键值对
 			case clientv3.EventTypeDelete:
 				delete(myServicesStorage.ServicesStorage[serviceName], string(ev.Kv.Key))
+				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[serviceName].Strategy {
+					myServicesStorage.DeleteNode(string(ev.Kv.Key))
+				}
 			// 添加 myServicesStorage 中的键值对
 			case clientv3.EventTypePut:
 				myServicesStorage.ServicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
+				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[serviceName].Strategy {
+					myServicesStorage.AddNode(string(ev.Kv.Key), string(ev.Kv.Value))
+				}
 			}
 			myServicesStorage.Unlock()
 		}
@@ -67,7 +75,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	var leaseID clientv3.LeaseID
 
 	serviceKey := fmt.Sprintf("%s_%s", req.Service.Name, req.Service.Port)
-	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight)
+	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status)
 
 	// 查看当前的服务是否注册过
 	getRes, err := cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
@@ -148,6 +156,9 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 				myServicesStorage.Lock()
 				for _, kv := range getRes.Kvs {
 					myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
+					if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
+						myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
+					}
 				}
 				myServicesStorage.Unlock()
 			}
@@ -166,7 +177,7 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		if !ok {
 			return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
 		}
-		addr = routerStrategy.GetAddr(myServicesStorage, config)
+		addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
 	} else {
 		addr = req.FixedRouterAddr
 	}

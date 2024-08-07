@@ -25,6 +25,7 @@ var (
 	port     = flag.Int("port", 50050, "The server port")
 	protocol = flag.String("protocol", "grpc", "The server protocol")
 	weight   = flag.String("weight", "1", "The server weight")
+	status   = flag.String("status", "0", "The server status")
 )
 
 // MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
@@ -39,16 +40,17 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 	times += 1
 	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, times)
 	return &pb.HelloResponse{
-		Msg: fmt.Sprintf("Hello, I am %s:%d", *name, *port),
+		Msg: fmt.Sprintf("Hello, I am %s_%d", *name, *port),
 	}, nil
 }
 
 // DiscoverService 发现服务
 func DiscoverService(client pb.MiniGameRouterClient, serviceName string, fixedRouter string) (*pb.DiscoverServiceResponse, error) {
 	req := &pb.DiscoverServiceRequest{
-		FromMsg:         fmt.Sprintf("%s:%d", *name, *port),
+		FromMsg:         fmt.Sprintf("%s_%d", *name, *port),
 		ToMsg:           serviceName,
 		FixedRouterAddr: fixedRouter,
+		Status:          *status,
 	}
 	return client.DiscoverService(context.Background(), req)
 }
@@ -62,6 +64,7 @@ func RegisterService(client pb.MiniGameRouterClient) (*pb.RegisterServiceRespons
 			Port:     strconv.Itoa(*port + 1),
 			Protocol: *protocol,
 			Weight:   *weight,
+			Status:   *status,
 		},
 	}
 	return client.RegisterService(context.Background(), req)
