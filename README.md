@@ -74,7 +74,6 @@ D "键入D则使用最少连接数路由算法访问D类服务器"
 
 ``` bash
 set
-
 [key] [endpoints] timeout "如 `tsy localhost:50050 60`,60秒为动态键值持续时间，可被覆盖"
 ```
 
