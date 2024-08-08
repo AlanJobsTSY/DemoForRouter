@@ -13,6 +13,7 @@ const (
 	ConsistentHash     RoutingStrategy = "consistent_hash"
 	Random             RoutingStrategy = "random"
 	WeightedRoundRobin RoutingStrategy = "weighted_round_robin"
+	LeastConnections   RoutingStrategy = "least_connections"
 	//FixedRoute         RoutingStrategy = "fixed_route"
 )
 
@@ -28,6 +29,7 @@ var ServiceConfigs = map[string]*ServiceConfig{
 	"A": {ServiceName: "A", Strategy: ConsistentHash},
 	"B": {ServiceName: "B", Strategy: Random},
 	"C": {ServiceName: "C", Strategy: WeightedRoundRobin},
+	"D": {ServiceName: "D", Strategy: LeastConnections},
 	//"D": {ServiceName: "D", Strategy: FixedRoute},
 }
 
@@ -41,6 +43,7 @@ type IsDiscovered struct {
 type ServicesStorage struct {
 	ServicesStorage map[string]map[string]string // 存储服务实例信息
 	CurrentWeight   map[string]map[string]int    // 存储当前权重
+	DynamicRouter   map[string]string
 	HashRing        *treemap.Map
 	sync.RWMutex
 }

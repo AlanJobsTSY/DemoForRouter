@@ -53,11 +53,6 @@ func (ss *ServicesStorage) DeleteNode(svrName string) {
 func (ss *ServicesStorage) getNode(svrName string) string {
 	virtualKey := hashCode(svrName)
 	_, node := ss.HashRing.Ceiling(virtualKey)
-	/*list := ss.HashRing.Values()
-	for i := 0; i < len(list); i++ {
-		log.Println(list[i])
-	}
-	log.Printf("tsytsy %d   %d   %d", virtualKey, key, ss.HashRing.Size())*/
 	if node == nil {
 		_, node = ss.HashRing.Ceiling(0)
 		if node == nil {
@@ -68,7 +63,7 @@ func (ss *ServicesStorage) getNode(svrName string) string {
 	//有状态插入
 }
 
-// consistentHash 一致性哈希路由策略（未实现）
+// consistentHash 一致性哈希路由策略
 func consistentHash(myServicesStorage *ServicesStorage, svrName string, status string) string {
 	var addr string = ""
 	addr = myServicesStorage.getNode(svrName)

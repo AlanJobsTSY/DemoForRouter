@@ -12,6 +12,7 @@ service MiniGameRouter {
   rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse);
   // 发现服务
   rpc DiscoverService(DiscoverServiceRequest) returns (DiscoverServiceResponse);
+  rpc SetCustomRoute(SetRequest)returns(SetResponse);
   // 简单的问候服务
   rpc SayHello(HelloRequest) returns (HelloResponse);
 }
@@ -30,6 +31,8 @@ message Service {
   string weight = 5;
   // 有无状态服务
   string status =6;
+  // 连接数量
+  string connNum =7 ;
 }
 
 // 注册服务请求
@@ -71,5 +74,14 @@ message HelloRequest {
 // 问候响应
 message HelloResponse {
   // 响应消息
+  string msg = 1;
+}
+
+message SetRequest{
+  string key = 1;
+  string value = 2;
+  string timeout= 3;
+}
+message SetResponse{
   string msg = 1;
 }

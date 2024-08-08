@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	MiniGameRouter_RegisterService_FullMethodName = "/proto.MiniGameRouter/RegisterService"
 	MiniGameRouter_DiscoverService_FullMethodName = "/proto.MiniGameRouter/DiscoverService"
+	MiniGameRouter_SetCustomRoute_FullMethodName  = "/proto.MiniGameRouter/SetCustomRoute"
 	MiniGameRouter_SayHello_FullMethodName        = "/proto.MiniGameRouter/SayHello"
 )
 
@@ -36,6 +37,7 @@ type MiniGameRouterClient interface {
 	RegisterService(ctx context.Context, in *RegisterServiceRequest, opts ...grpc.CallOption) (*RegisterServiceResponse, error)
 	// 发现服务
 	DiscoverService(ctx context.Context, in *DiscoverServiceRequest, opts ...grpc.CallOption) (*DiscoverServiceResponse, error)
+	SetCustomRoute(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	// 简单的问候服务
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 }
@@ -68,6 +70,16 @@ func (c *miniGameRouterClient) DiscoverService(ctx context.Context, in *Discover
 	return out, nil
 }
 
+func (c *miniGameRouterClient) SetCustomRoute(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetResponse)
+	err := c.cc.Invoke(ctx, MiniGameRouter_SetCustomRoute_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *miniGameRouterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HelloResponse)
@@ -88,6 +100,7 @@ type MiniGameRouterServer interface {
 	RegisterService(context.Context, *RegisterServiceRequest) (*RegisterServiceResponse, error)
 	// 发现服务
 	DiscoverService(context.Context, *DiscoverServiceRequest) (*DiscoverServiceResponse, error)
+	SetCustomRoute(context.Context, *SetRequest) (*SetResponse, error)
 	// 简单的问候服务
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	mustEmbedUnimplementedMiniGameRouterServer()
@@ -105,6 +118,9 @@ func (UnimplementedMiniGameRouterServer) RegisterService(context.Context, *Regis
 }
 func (UnimplementedMiniGameRouterServer) DiscoverService(context.Context, *DiscoverServiceRequest) (*DiscoverServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiscoverService not implemented")
+}
+func (UnimplementedMiniGameRouterServer) SetCustomRoute(context.Context, *SetRequest) (*SetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetCustomRoute not implemented")
 }
 func (UnimplementedMiniGameRouterServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
@@ -166,6 +182,24 @@ func _MiniGameRouter_DiscoverService_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MiniGameRouter_SetCustomRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MiniGameRouterServer).SetCustomRoute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MiniGameRouter_SetCustomRoute_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MiniGameRouterServer).SetCustomRoute(ctx, req.(*SetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MiniGameRouter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {
@@ -198,6 +232,10 @@ var MiniGameRouter_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiscoverService",
 			Handler:    _MiniGameRouter_DiscoverService_Handler,
+		},
+		{
+			MethodName: "SetCustomRoute",
+			Handler:    _MiniGameRouter_SetCustomRoute_Handler,
 		},
 		{
 			MethodName: "SayHello",

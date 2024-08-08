@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
+	"strconv"
 )
 
 // 定义命令行参数，用于指定 sidecar 的端口
@@ -32,8 +33,9 @@ var myIsDiscovered = &routerStrategy.IsDiscovered{
 
 // 全局变量，用于存储服务信息
 var myServicesStorage = &routerStrategy.ServicesStorage{
-	ServicesStorage: map[string]map[string]string{},
+	ServicesStorage: make(map[string]map[string]string),
 	CurrentWeight:   make(map[string]map[string]int),
+	DynamicRouter:   make(map[string]string),
 	HashRing:        treemap.NewWithIntComparator(),
 }
 
@@ -66,6 +68,27 @@ func WatchServiceName(serviceName string) {
 		}
 	}
 }
+func WatchDynamicRouter(key string) {
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+	keepAliveCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	watchChannel := cli.Watch(keepAliveCtx, key, clientv3.WithPrefix())
+	for watchRes := range watchChannel {
+		for _, ev := range watchRes.Events {
+			switch ev.Type {
+			// 删除 myServicesStorage 中的键值对
+			case clientv3.EventTypeDelete:
+				delete(myServicesStorage.DynamicRouter, string(ev.Kv.Key))
+				return
+			// 添加 myServicesStorage 中的键值对
+			case clientv3.EventTypePut:
+				myServicesStorage.DynamicRouter[string(ev.Kv.Key)] = string(ev.Kv.Value)
+
+			}
+		}
+	}
+}
 
 // 注册服务
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
@@ -75,7 +98,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	var leaseID clientv3.LeaseID
 
 	serviceKey := fmt.Sprintf("%s_%s", req.Service.Name, req.Service.Port)
-	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status)
+	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
 
 	// 查看当前的服务是否注册过
 	getRes, err := cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
@@ -142,42 +165,59 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	defer cli.Close()
 	var addr string
 	if req.FixedRouterAddr == "" {
-		// 如果服务未被发现过，则进行服务发现
-		if !myIsDiscovered.IsDiscovered[req.ToMsg] {
-			log.Println("FIRST TIME")
-			myIsDiscovered.IsDiscovered[req.ToMsg] = true
-			myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
-			getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
+		if _, ok := myServicesStorage.DynamicRouter[req.ToMsg]; !ok {
+			getRes, err := cli.Get(ctx, req.ToMsg)
 			if err != nil {
 				log.Fatalln(err)
 			}
-
 			if getRes.Count > 0 {
 				myServicesStorage.Lock()
-				for _, kv := range getRes.Kvs {
-					myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
-					if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
-						myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
-					}
-				}
+				//log.Printf("tsytsy%s,%s", req.ToMsg, string(getRes.Kvs[0].Value))
+				myServicesStorage.DynamicRouter[req.ToMsg] = string(getRes.Kvs[0].Value)
 				myServicesStorage.Unlock()
+				go WatchDynamicRouter(req.ToMsg)
 			}
-			go WatchServiceName(req.ToMsg)
 		}
+		if endPoint, ok := myServicesStorage.DynamicRouter[req.ToMsg]; ok {
+			addr = endPoint
+		} else if len(req.ToMsg) == 1 {
+			// 如果服务未被发现过，则进行服务发现
+			if !myIsDiscovered.IsDiscovered[req.ToMsg] {
+				//log.Println("FIRST TIME")
+				myIsDiscovered.IsDiscovered[req.ToMsg] = true
+				myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
+				getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
+				if err != nil {
+					log.Fatalln(err)
+				}
 
-		// 打印 req.ToMsg 类的服务
-		var index int = 0
-		for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
-			index += 1
-			log.Printf("%d_%s_%s", index, key, value)
-		}
+				if getRes.Count > 0 {
+					myServicesStorage.Lock()
+					for _, kv := range getRes.Kvs {
+						myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
+						if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
+							myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
+						}
+					}
+					myServicesStorage.Unlock()
+				}
+				go WatchServiceName(req.ToMsg)
+			}
 
-		// 获取服务配置
-		config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
-		if !ok {
-			return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
+			// 打印 req.ToMsg 类的服务
+			var index int = 0
+			for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
+				index += 1
+				log.Printf("%d_%s_%s", index, key, value)
+			}
+
+			// 获取服务配置
+			config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
+			if !ok {
+				return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
+			}
+			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
 		}
-		addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
 	} else {
 		addr = req.FixedRouterAddr
 	}
@@ -200,6 +240,24 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	}
 	return &pb.DiscoverServiceResponse{
 		Msg: helloRes.Msg,
+	}, nil
+}
+func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+	var leaseID clientv3.LeaseID
+	timeInt, _ := strconv.Atoi(req.Timeout)
+	leaseRes, err := cli.Grant(ctx, int64(timeInt))
+	if err != nil {
+		log.Fatalf("Failed to grant lease: %v", err)
+	}
+	leaseID = leaseRes.ID
+	_, err = cli.Put(ctx, req.Key, req.Value, clientv3.WithLease(leaseID))
+	if err != nil {
+		return nil, fmt.Errorf("Fail SetCustomRoute")
+	}
+	return &pb.SetResponse{
+		Msg: fmt.Sprintf("%s_%s set success", req.Key, req.Value),
 	}, nil
 }
 
