@@ -42,6 +42,10 @@ type IsDiscovered struct {
 	IsDiscovered map[string]bool
 	sync.RWMutex
 }
+type RandomStruct struct {
+	RandomList []string
+	RandomMap  map[string]int
+}
 
 // ServicesStorage 用于存储服务实例信息和当前权重
 type ServicesStorage struct {
@@ -49,7 +53,6 @@ type ServicesStorage struct {
 	CurrentWeight   map[string]map[string]int    // 存储当前权重
 	DynamicRouter   map[string]string
 	HashRing        *treemap.Map
-	RondomList      []string
-	RondomMap       map[string]int
+	RandomStorage   *RandomStruct
 	sync.RWMutex
 }

@@ -13,10 +13,10 @@ func random(myServicesStorage *ServicesStorage, svrName string) string {
 	myServicesStorage.RLock()
 	defer myServicesStorage.RUnlock()
 	// VERSION3
-	if len(myServicesStorage.RondomList) > 0 {
-		log.Printf("len   %d", len(myServicesStorage.RondomList))
-		indexRondom := rand.Intn(len(myServicesStorage.RondomList))
-		value := myServicesStorage.RondomList[indexRondom]
+	if len(myServicesStorage.RandomStorage.RandomList) > 0 {
+		log.Printf("len   %d", len(myServicesStorage.RandomStorage.RandomList))
+		indexRandom := rand.Intn(len(myServicesStorage.RandomStorage.RandomList))
+		value := myServicesStorage.RandomStorage.RandomList[indexRandom]
 		parts := strings.Split(value, ":")
 		addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
 	}
@@ -44,4 +44,15 @@ func random(myServicesStorage *ServicesStorage, svrName string) string {
 			}
 		}*/
 	return addr
+}
+
+func (ss *ServicesStorage) DeleteRandom(svrName string) {
+	ss.RandomStorage.RandomList[ss.RandomStorage.RandomMap[svrName]] = ss.RandomStorage.RandomList[len(ss.RandomStorage.RandomList)-1]
+	ss.RandomStorage.RandomList = ss.RandomStorage.RandomList[:len(ss.RandomStorage.RandomList)-1]
+	delete(ss.RandomStorage.RandomMap, svrName)
+}
+
+func (ss *ServicesStorage) AddRandom(svrName string, ip string) {
+	ss.RandomStorage.RandomList = append(ss.RandomStorage.RandomList, ip)
+	ss.RandomStorage.RandomMap[svrName] = len(ss.RandomStorage.RandomList) - 1
 }
