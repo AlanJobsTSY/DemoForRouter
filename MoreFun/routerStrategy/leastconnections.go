@@ -13,30 +13,32 @@ import (
 func leastConnections(myServicesStorage *ServicesStorage, svrName string) string {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
+	myServicesStorage.RLock()
+	defer myServicesStorage.RUnlock()
 	minnConn := math.MaxInt
 	var addr string
 	var key string
-	for k, v := range myServicesStorage.ServicesStorage[svrName] {
-		parts := strings.Split(v, ":")
-		partConn, _ := strconv.Atoi(parts[6])
-		if minnConn >= partConn {
-			minnConn = partConn
-			addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
-			key = k
+	if instances, ok := myServicesStorage.ServicesStorage[svrName]; ok && len(instances) > 0 {
+		for k, v := range instances {
+			parts := strings.Split(v, ":")
+			partConn, _ := strconv.Atoi(parts[6])
+			if minnConn >= partConn {
+				minnConn = partConn
+				addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
+				key = k
+			}
+		}
+		// 替换 parts 切片中的第 6 个元素
+		parts := strings.Split(instances[key], ":")
+		parts[6] = strconv.Itoa(minnConn + 1)
+		// 将 parts 切片重新拼接成字符串
+		newValue := strings.Join(parts, ":")
+
+		_, err := cli.Put(context.Background(), key, newValue, clientv3.WithIgnoreLease())
+		if err != nil {
+			fmt.Println("Failed to update etcd:", err)
+			return ""
 		}
 	}
-
-	// 替换 parts 切片中的第 6 个元素
-	parts := strings.Split(myServicesStorage.ServicesStorage[svrName][key], ":")
-	parts[6] = strconv.Itoa(minnConn + 1)
-	// 将 parts 切片重新拼接成字符串
-	newValue := strings.Join(parts, ":")
-
-	_, err := cli.Put(context.Background(), key, newValue, clientv3.WithIgnoreLease())
-	if err != nil {
-		fmt.Println("Failed to update etcd:", err)
-		return ""
-	}
-
 	return addr
 }

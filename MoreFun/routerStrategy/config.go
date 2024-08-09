@@ -15,6 +15,7 @@ const (
 	WeightedRoundRobin       RoutingStrategy = "weighted_round_robin"
 	LeastConnections         RoutingStrategy = "least_connections"
 	WeightedLeastConnections RoutingStrategy = "weighted_least_connections"
+	FastestResponse          RoutingStrategy = "fastest_response"
 	//FixedRoute         RoutingStrategy = "fixed_route"
 )
 
@@ -32,6 +33,7 @@ var ServiceConfigs = map[string]*ServiceConfig{
 	"C": {ServiceName: "C", Strategy: WeightedRoundRobin},
 	"D": {ServiceName: "D", Strategy: LeastConnections},
 	"E": {ServiceName: "E", Strategy: WeightedLeastConnections},
+	"F": {ServiceName: "F", Strategy: FastestResponse},
 	//"D": {ServiceName: "D", Strategy: FixedRoute},
 }
 

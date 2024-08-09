@@ -13,20 +13,9 @@ func GetAddr(myServicesStorage *ServicesStorage, svrConfig *ServiceConfig, fromS
 	case LeastConnections:
 		addr = leastConnections(myServicesStorage, svrConfig.ServiceName)
 	case WeightedLeastConnections:
-		{
-			addr = weightedLeastConnections(myServicesStorage, svrConfig.ServiceName)
-		}
-		/*
-			case FixedRoute:
-				addr = fixedRoute(myServicesStorage, svrConfig.ServiceName, svrConfig.FixedRoute)
-		*/
+		addr = weightedLeastConnections(myServicesStorage, svrConfig.ServiceName)
+	case FastestResponse:
+		addr = fastestResponse(myServicesStorage, svrConfig.ServiceName)
 	}
 	return addr
 }
-
-/*
-// fixedRoute 固定路由策略
-func fixedRoute(myServicesStorage *ServicesStorage, svrName string, fixedRoute string) string {
-	return fixedRoute
-}
-*/

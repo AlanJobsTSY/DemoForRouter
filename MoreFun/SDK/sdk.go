@@ -42,9 +42,10 @@ func DiscoverService(client pb.MiniGameRouterClient, serviceName string, fixedRo
 }
 
 // startSidecar 启动 sidecar
-func startSidecar(port int) error {
+func startSidecar(ip string, port int) error {
 	sidecarPort := port + 1
-	cmd := exec.Command("go", "run", "./sidecar/sidecar.go", "--port", strconv.Itoa(sidecarPort))
+	sidecarIP := ip
+	cmd := exec.Command("go", "run", "./sidecar/sidecar.go", "--ip", sidecarIP, "--port", strconv.Itoa(sidecarPort))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Start()
@@ -58,7 +59,7 @@ func InitOne(svrName *string, svrIP *string, svrPort *int, svrProtocol *string, 
 	weight = svrWeight
 	status = svrStatus
 	// 启动 sidecar
-	if err := startSidecar(*port); err != nil {
+	if err := startSidecar(*ip, *port); err != nil {
 		log.Fatalf("Failed to start sidecar: %v", err)
 	}
 	// 等待 sidecar 启动完成
@@ -68,7 +69,7 @@ func InitOne(svrName *string, svrIP *string, svrPort *int, svrProtocol *string, 
 
 // connectToSidecar 连接到 sidecar
 func connectToSidecar(port int) (*grpc.ClientConn, pb.MiniGameRouterClient, error) {
-	addr := fmt.Sprintf("localhost:%d", port+1)
+	addr := fmt.Sprintf("%s:%d", *ip, port+1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to sidecar: %v", err)

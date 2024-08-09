@@ -18,6 +18,7 @@ import (
 
 // 定义命令行参数，用于指定 sidecar 的端口
 var (
+	ip   = flag.String("ip", "localhost", "The sidecar ip")
 	port = flag.Int("port", 50051, "The sidecar port")
 )
 
@@ -263,7 +264,7 @@ func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRe
 
 // 简单的问候服务
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	addr := fmt.Sprintf("localhost:%d", *port-1)
+	addr := fmt.Sprintf("%s:%d", *ip, *port-1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("Sidecar could not connect to its server %s", err)
