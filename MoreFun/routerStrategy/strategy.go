@@ -12,6 +12,10 @@ func GetAddr(myServicesStorage *ServicesStorage, svrConfig *ServiceConfig, fromS
 		addr = weightedRoundRobin(myServicesStorage, svrConfig.ServiceName)
 	case LeastConnections:
 		addr = leastConnections(myServicesStorage, svrConfig.ServiceName)
+	case WeightedLeastConnections:
+		{
+			addr = weightedLeastConnections(myServicesStorage, svrConfig.ServiceName)
+		}
 		/*
 			case FixedRoute:
 				addr = fixedRoute(myServicesStorage, svrConfig.ServiceName, svrConfig.FixedRoute)

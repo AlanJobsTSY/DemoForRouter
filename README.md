@@ -54,27 +54,13 @@ go run .\server\server.go --name A  --ip "服务器地址,默认localhost" --por
 
 ### 3. 服务请求调用
 
-键入`A`,`B`,`C`,`D`,`[key]`请求各类服务
+键入`A`,`B`,`C`,`D`请求各类服务
 
 ``` bash
 A "键入A则使用一致性哈希算法访问A类服务器"
 B "键入B则使用随机算法访问B类服务器"
 C "键入C则使用平滑权重轮询算法访问C类服务器"
-D "键入D则使用最少连接数路由算法访问D类服务器"
-[key] "键入[key]则实现动态键值路由访问[endpoint]服务器（timeout时间内）"
-```
-
-键入 `[任意字符串]  ip:port`实现固定键值路由
-
-``` bash
-[svrName] localhost:50050 "前者任意字符串，后者为点对点路由地址"
-```
-
-键入`set`然后键入`key endpoints timeout`设定动态键值路由
-
-``` bash
-set
-[key] [endpoints] timeout "如 `tsy localhost:50050 60`,60秒为动态键值持续时间，可被覆盖"
+D "键入D则使用固定路由算法访问D类服务器"
 ```
 
 ## 项目细节

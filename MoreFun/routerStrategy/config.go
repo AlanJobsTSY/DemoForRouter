@@ -10,10 +10,11 @@ type RoutingStrategy string
 
 // 定义各种路由策略的常量
 const (
-	ConsistentHash     RoutingStrategy = "consistent_hash"
-	Random             RoutingStrategy = "random"
-	WeightedRoundRobin RoutingStrategy = "weighted_round_robin"
-	LeastConnections   RoutingStrategy = "least_connections"
+	ConsistentHash           RoutingStrategy = "consistent_hash"
+	Random                   RoutingStrategy = "random"
+	WeightedRoundRobin       RoutingStrategy = "weighted_round_robin"
+	LeastConnections         RoutingStrategy = "least_connections"
+	WeightedLeastConnections RoutingStrategy = "weighted_least_connections"
 	//FixedRoute         RoutingStrategy = "fixed_route"
 )
 
@@ -30,6 +31,7 @@ var ServiceConfigs = map[string]*ServiceConfig{
 	"B": {ServiceName: "B", Strategy: Random},
 	"C": {ServiceName: "C", Strategy: WeightedRoundRobin},
 	"D": {ServiceName: "D", Strategy: LeastConnections},
+	"E": {ServiceName: "E", Strategy: WeightedLeastConnections},
 	//"D": {ServiceName: "D", Strategy: FixedRoute},
 }
 
