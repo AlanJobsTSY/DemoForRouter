@@ -2,7 +2,6 @@ package routerStrategy
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"strings"
 )
@@ -14,7 +13,7 @@ func random(myServicesStorage *ServicesStorage, svrName string) string {
 	defer myServicesStorage.RUnlock()
 	// VERSION3
 	if len(myServicesStorage.RandomStorage.RandomList) > 0 {
-		log.Printf("len   %d", len(myServicesStorage.RandomStorage.RandomList))
+		//log.Printf("len   %d", len(myServicesStorage.RandomStorage.RandomList))
 		indexRandom := rand.Intn(len(myServicesStorage.RandomStorage.RandomList))
 		value := myServicesStorage.RandomStorage.RandomList[indexRandom]
 		parts := strings.Split(value, ":")

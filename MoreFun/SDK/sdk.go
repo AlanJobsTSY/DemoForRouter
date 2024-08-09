@@ -1,7 +1,6 @@
 package SDK
 
 import (
-	"MoreFun/etcd"
 	pb "MoreFun/proto"
 	"bufio"
 	"context"
@@ -63,7 +62,7 @@ func InitOne(svrName *string, svrIP *string, svrPort *int, svrProtocol *string, 
 		log.Fatalf("Failed to start sidecar: %v", err)
 	}
 	// 等待 sidecar 启动完成
-	time.Sleep(etcd.DialTimeout)
+	time.Sleep(2 * time.Second)
 
 }
 
