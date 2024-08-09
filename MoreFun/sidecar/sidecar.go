@@ -37,6 +37,8 @@ var myServicesStorage = &routerStrategy.ServicesStorage{
 	ServicesStorage: make(map[string]map[string]string),
 	CurrentWeight:   make(map[string]map[string]int),
 	DynamicRouter:   make(map[string]string),
+	RondomList:      make([]string, 0),
+	RondomMap:       make(map[string]int),
 	HashRing:        treemap.NewWithIntComparator(),
 }
 
@@ -58,11 +60,19 @@ func WatchServiceName(serviceName string) {
 				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[serviceName].Strategy {
 					myServicesStorage.DeleteNode(string(ev.Kv.Key))
 				}
+				if routerStrategy.Random == routerStrategy.ServiceConfigs[serviceName].Strategy {
+					myServicesStorage.RondomList[myServicesStorage.RondomMap[string(ev.Kv.Key)]] = myServicesStorage.RondomList[len(myServicesStorage.RondomList)-1]
+					myServicesStorage.RondomList = myServicesStorage.RondomList[:len(myServicesStorage.RondomList)-1]
+				}
 			// 添加 myServicesStorage 中的键值对
 			case clientv3.EventTypePut:
 				myServicesStorage.ServicesStorage[serviceName][string(ev.Kv.Key)] = string(ev.Kv.Value)
 				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[serviceName].Strategy {
 					myServicesStorage.AddNode(string(ev.Kv.Key), string(ev.Kv.Value))
+				}
+				if routerStrategy.Random == routerStrategy.ServiceConfigs[serviceName].Strategy {
+					myServicesStorage.RondomList = append(myServicesStorage.RondomList, string(ev.Kv.Value))
+					myServicesStorage.RondomMap[string(ev.Kv.Key)] = len(myServicesStorage.RondomList) - 1
 				}
 			}
 			myServicesStorage.Unlock()
@@ -198,6 +208,10 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 						myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
 						if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
 							myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
+						}
+						if routerStrategy.Random == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
+							myServicesStorage.RondomList = append(myServicesStorage.RondomList, string(kv.Value))
+							myServicesStorage.RondomMap[string(kv.Key)] = len(myServicesStorage.RondomList) - 1
 						}
 					}
 					myServicesStorage.Unlock()

@@ -49,5 +49,7 @@ type ServicesStorage struct {
 	CurrentWeight   map[string]map[string]int    // 存储当前权重
 	DynamicRouter   map[string]string
 	HashRing        *treemap.Map
+	RondomList      []string
+	RondomMap       map[string]int
 	sync.RWMutex
 }
