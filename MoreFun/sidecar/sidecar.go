@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -174,7 +175,11 @@ func printWant(svrWant string) {
 	var index int = 0
 	for _, value := range myServicesStorage.ServicesStorage[svrWant] {
 		index += 1
-		log.Printf("[%d] %s", index, value)
+		parts := strings.Split(value, ":")
+		partPort, _ := strconv.Atoi(parts[2])
+		parts[2] = strconv.Itoa(partPort - 1)
+		newValue := strings.Join(parts, ":")
+		log.Printf("[%d] %s", index, newValue)
 	}
 }
 
