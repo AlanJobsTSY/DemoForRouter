@@ -21,7 +21,7 @@ func fastestResponse(myServicesStorage *ServicesStorage, svrName string) string 
 			addrInstance := fmt.Sprintf("%s:%s", parts[1], parts[2])
 			startTime := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 			// 创建 gRPC 连接，使用 grpc.WithBlock() 确保连接完全建立
 			conn, err := grpc.DialContext(ctx, addrInstance, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
