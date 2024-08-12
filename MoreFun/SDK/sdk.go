@@ -67,7 +67,7 @@ func Init(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClien
 // connectToSidecar 连接到 sidecar
 func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClient, error) {
 	addr := fmt.Sprintf("%s:%d", *endPoint.Ip, *endPoint.Port+1)
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 200; i++ {
 		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err == nil {
 			client := pb.NewMiniGameRouterClient(conn)
