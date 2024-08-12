@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
 )
 
 // 定义命令行参数，用于指定 sidecar 的端口
@@ -27,12 +28,12 @@ type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
-// 全局变量，用于存储服务发现状态
+// 缓存，用于存储服务发现状态
 var myIsDiscovered = &routerStrategy.IsDiscovered{
 	IsDiscovered: map[string]bool{},
 }
 
-// 全局变量，用于存储服务信息
+// 缓存，用于存储服务信息
 var myServicesStorage = &routerStrategy.ServicesStorage{
 	ServicesStorage: make(map[string]map[string]string),
 	CurrentWeight:   make(map[string]map[string]int),
@@ -107,7 +108,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	var grantLease bool
 	var leaseID clientv3.LeaseID
 
-	serviceKey := fmt.Sprintf("%s_%s", req.Service.Name, req.Service.Port)
+	serviceKey := fmt.Sprintf("%s_%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port)
 	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
 
 	// 查看当前的服务是否注册过
@@ -169,6 +170,14 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}, nil
 }
 
+func printWant(svrWant string) {
+	var index int = 0
+	for _, value := range myServicesStorage.ServicesStorage[svrWant] {
+		index += 1
+		log.Printf("[%d] %s", index, value)
+	}
+}
+
 // 服务发现
 func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.DiscoverServiceRequest) (*pb.DiscoverServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
@@ -182,7 +191,6 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			}
 			if getRes.Count > 0 {
 				myServicesStorage.Lock()
-				//log.Printf("tsytsy%s,%s", req.ToMsg, string(getRes.Kvs[0].Value))
 				myServicesStorage.DynamicRouter[req.ToMsg] = string(getRes.Kvs[0].Value)
 				myServicesStorage.Unlock()
 				go WatchDynamicRouter(req.ToMsg)
@@ -218,11 +226,9 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			}
 
 			// 打印 req.ToMsg 类的服务
-			var index int = 0
-			for key, value := range myServicesStorage.ServicesStorage[req.ToMsg] {
-				index += 1
-				log.Printf("%d_%s_%s", index, key, value)
-			}
+			/*
+				printWant(req.ToMsg)
+			*/
 
 			// 获取服务配置
 			config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
@@ -233,8 +239,18 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		}
 	} else {
 		addr = req.FixedRouterAddr
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		if err != nil {
+			log.Printf("The specified target cannot be reached. Please select an IP address from the following %s services.", req.ToMsg)
+			printWant(req.ToMsg)
+			return nil, err
+		}
+		conn.Close()
+
 	}
-	//log.Printf("%s,  %s", req.FixedRouterAddr, addr)
 	// 连接另外一个 sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

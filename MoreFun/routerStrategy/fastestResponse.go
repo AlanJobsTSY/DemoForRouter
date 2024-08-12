@@ -20,17 +20,20 @@ func fastestResponse(myServicesStorage *ServicesStorage, svrName string) string 
 			// 获取实例的权重
 			addrInstance := fmt.Sprintf("%s:%s", parts[1], parts[2])
 			startTime := time.Now()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 			defer cancel()
 			// 创建 gRPC 连接，使用 grpc.WithBlock() 确保连接完全建立
 			conn, err := grpc.DialContext(ctx, addrInstance, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+
 			if err != nil {
 				continue
 			}
-			conn.Close()
 			// 记录结束时间
 			endTime := time.Now()
+			conn.Close()
 			connectionTime := endTime.Sub(startTime)
+			//log.Printf("%d", connectionTime)
 			if minn > connectionTime {
 				minn = connectionTime
 				addr = addrInstance

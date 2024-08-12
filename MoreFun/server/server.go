@@ -2,6 +2,7 @@ package main
 
 import (
 	"MoreFun/SDK"
+	"MoreFun/endPoint"
 	pb "MoreFun/proto"
 	"context"
 	"flag"
@@ -33,7 +34,7 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 	times += 1
 	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, times)
 	return &pb.HelloResponse{
-		Msg: fmt.Sprintf("Hello, I am %s_%d", *name, *port),
+		Msg: fmt.Sprintf("Hello, I am %s_%s:%d", *name, *ip, *port),
 	}, nil
 }
 
@@ -53,11 +54,18 @@ func startGRPCServer(port int) {
 
 func main() {
 	flag.Parse()
-	SDK.InitOne(name, ip, port, protocol, weight, status)
 	// 启动 gRPC 服务器
 	go startGRPCServer(*port)
-	conn, client := SDK.InitTwo()
+	endpoint := endPoint.EndPoint{
+		Name:     name,
+		Ip:       ip,
+		Port:     port,
+		Protocol: protocol,
+		Weight:   weight,
+		Status:   status,
+	}
+	conn, client := SDK.Init(&endpoint)
 	defer conn.Close()
-	SDK.Input(client)
+	SDK.Input(&endpoint, client)
 
 }
