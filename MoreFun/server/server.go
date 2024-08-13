@@ -75,7 +75,7 @@ func initGRPCClients() {
 			defer wg.Done()
 			currPort := *port + 2*i
 			go startGRPCServer(currPort)
-			currWeight := rand.Intn(10)
+			currWeight := rand.Intn(10) + 1
 			if *num == 1 {
 				currWeight = *weight
 			}
