@@ -113,11 +113,16 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 
 	serviceKey := fmt.Sprintf("%s_%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port)
 	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
-
+	var getRes *clientv3.GetResponse
+	var err error
 	// 查看当前的服务是否注册过
-	getRes, err := cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
-	if err != nil {
-		log.Fatalf("Failed to get service key: %v", err)
+	for {
+		getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
+		if err != nil {
+			log.Printf("Failed to get service key: %v", err)
+			continue
+		}
+		break
 	}
 
 	// 没有注册过则创建一个租约，同时将租约的ID赋值给leaseID
