@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -42,7 +41,7 @@ func fastestResponse(myServicesStorage *ServicesStorage, svrName string) string 
 				//记录结束时间
 				endTime := time.Now()
 				connectionTime := endTime.Sub(startTime)
-				log.Printf("%s %v", addrInstance, connectionTime)
+				//log.Printf("%s %v", addrInstance, connectionTime)
 				// 保护minn和addr这两个共享变量
 				mu.Lock()
 				defer mu.Unlock()
