@@ -31,15 +31,14 @@ var (
 // MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
 type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
-	port int
+	port  int
+	times int
 }
-
-var times int = 0
 
 // SayHello 实现了 gRPC 的 SayHello 方法
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	times += 1
-	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, times)
+	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, s.times)
+	s.times += 1
 	return &pb.HelloResponse{
 		Msg: fmt.Sprintf("Hello, I am %s_%s:%d", *name, *ip, s.port),
 	}, nil
@@ -52,7 +51,7 @@ func startGRPCServer(port int) {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port})
+	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port, times: 1})
 	log.Printf("Server is listening on port %d", port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
