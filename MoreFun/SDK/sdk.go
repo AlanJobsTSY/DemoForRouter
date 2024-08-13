@@ -68,7 +68,7 @@ func Init(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClien
 func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClient, error) {
 	addr := fmt.Sprintf("%s:%d", *endPoint.Ip, *endPoint.Port+1)
 	for i := 0; i < 20; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 		defer cancel()
 		// 创建 gRPC 连接，使用 grpc.WithBlock() 确保连接完全建立
 		conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
@@ -76,6 +76,7 @@ func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGam
 			client := pb.NewMiniGameRouterClient(conn)
 			return conn, client, nil
 		}
+		log.Printf("fail times: %d", i)
 		// 连接失败，等待 0.1 秒后重试
 		//fmt.Printf("Failed to connect to sidecar at %s: %v. Retrying...\n", addr, err)
 		time.Sleep(100 * time.Millisecond)
