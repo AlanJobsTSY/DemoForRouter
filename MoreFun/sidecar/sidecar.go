@@ -116,10 +116,11 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	var getRes *clientv3.GetResponse
 	var err error
 	// 查看当前的服务是否注册过
-	for {
+	for i := 0; i < 20; i++ {
 		getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
 		if err != nil {
 			log.Printf("Failed to get service key: %v", err)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		break
@@ -139,7 +140,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	kv := clientv3.NewKV(cli)
 
 	// 开启事务
-	for {
+	for i := 0; i < 20; i++ {
 		txn := kv.Txn(ctx)
 		// 判断数据库中是否存在 s *Service
 		_, err = txn.If(clientv3.Compare(clientv3.CreateRevision(serviceKey), "=", 0)).
@@ -343,10 +344,18 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 // 主函数，启动 gRPC 服务器
 func main() {
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+	var lis net.Listener
+	var err error
+	for i := 0; i < 20; i++ {
+		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", *port))
+		if err != nil {
+			log.Printf("Failed to listen: %v", err)
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		break
 	}
+
 	defer lis.Close()
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
