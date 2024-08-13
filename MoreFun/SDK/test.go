@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 )
 
 func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
@@ -108,6 +109,7 @@ func testAllServicesToType(epSlice []*endPoint.EndPoint, clientSlice []*pb.MiniG
 }
 
 // 测试场景 2: 指定一个服务发给某类服务，发几次
+// testSpecificServiceToType 并发测试指定服务发给某类服务
 func testSpecificServiceToType(epSlice []*endPoint.EndPoint, clientSlice []*pb.MiniGameRouterClient) {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Enter the index of the service: ")
@@ -127,14 +129,21 @@ func testSpecificServiceToType(epSlice []*endPoint.EndPoint, clientSlice []*pb.M
 		fmt.Println("Invalid number")
 		return
 	}
+
+	var wg sync.WaitGroup
 	for i := 0; i < times; i++ {
-		helloRes, err := discoverService(epSlice[index], *clientSlice[index], serviceType, "")
-		if err != nil {
-			log.Printf("Error: %v", err)
-			return
-		}
-		log.Printf("Recv msg: %s", helloRes.Msg)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			helloRes, err := discoverService(epSlice[index], *clientSlice[index], serviceType, "")
+			if err != nil {
+				log.Printf("Error: %v", err)
+				return
+			}
+			log.Printf("Recv msg: %s", helloRes.Msg)
+		}()
 	}
+	wg.Wait()
 }
 
 // 测试场景 3: 所有服务发给指定目标路由，各发几次
@@ -189,13 +198,18 @@ func testSpecificServiceToRoute(epSlice []*endPoint.EndPoint, clientSlice []*pb.
 		fmt.Println("Invalid number")
 		return
 	}
-
+	var wg sync.WaitGroup
 	for i := 0; i < times; i++ {
-		helloRes, err := discoverService(epSlice[index], *clientSlice[index], serviceType, targetRoute)
-		if err != nil {
-			log.Printf("Error: %v", err)
-			return
-		}
-		log.Printf("Recv msg: %s", helloRes.Msg)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			helloRes, err := discoverService(epSlice[index], *clientSlice[index], serviceType, targetRoute)
+			if err != nil {
+				log.Printf("Error: %v", err)
+				return
+			}
+			log.Printf("Recv msg: %s", helloRes.Msg)
+		}()
 	}
+	wg.Wait()
 }
