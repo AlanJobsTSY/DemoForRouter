@@ -134,19 +134,23 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	kv := clientv3.NewKV(cli)
 
 	// 开启事务
-	txn := kv.Txn(ctx)
-	// 判断数据库中是否存在 s *Service
-	_, err = txn.If(clientv3.Compare(clientv3.CreateRevision(serviceKey), "=", 0)).
-		Then(
-			clientv3.OpPut(serviceKey, serviceValue, clientv3.WithLease(leaseID)),
-		).
-		Else(
-			clientv3.OpPut(serviceKey, serviceValue, clientv3.WithIgnoreLease()),
-		).
-		Commit()
+	for {
+		txn := kv.Txn(ctx)
+		// 判断数据库中是否存在 s *Service
+		_, err = txn.If(clientv3.Compare(clientv3.CreateRevision(serviceKey), "=", 0)).
+			Then(
+				clientv3.OpPut(serviceKey, serviceValue, clientv3.WithLease(leaseID)),
+			).
+			Else(
+				clientv3.OpPut(serviceKey, serviceValue, clientv3.WithIgnoreLease()),
+			).
+			Commit()
 
-	if err != nil {
-		log.Fatalf("Failed to commit transaction: %v", err)
+		if err != nil {
+			log.Printf("Failed to commit transaction: %v", err)
+			continue
+		}
+		break
 	}
 
 	// 租约保活机制
