@@ -81,6 +81,8 @@ func WatchServiceName(serviceName string) {
 		}
 	}
 }
+
+// 监听动态键值路由
 func WatchDynamicRouter(key string) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
@@ -171,6 +173,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}, nil
 }
 
+// 打印svrWant类服务的列表供用户选择
 func printWant(svrWant string) {
 	var index int = 0
 	for _, value := range myServicesStorage.ServicesStorage[svrWant] {
@@ -183,12 +186,45 @@ func printWant(svrWant string) {
 	}
 }
 
+// 缓存初始化
+func storageInit(ctx context.Context, cli *clientv3.Client, reqToMsg string) {
+	myIsDiscovered.Lock()
+	defer myIsDiscovered.Unlock()
+
+	if !myIsDiscovered.IsDiscovered[reqToMsg] {
+		//log.Println("FIRST TIME")
+		myIsDiscovered.IsDiscovered[reqToMsg] = true
+		myServicesStorage.ServicesStorage[reqToMsg] = make(map[string]string)
+		getRes, err := cli.Get(ctx, reqToMsg, clientv3.WithPrefix())
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		if getRes.Count > 0 {
+			myServicesStorage.Lock()
+			for _, kv := range getRes.Kvs {
+				myServicesStorage.ServicesStorage[reqToMsg][string(kv.Key)] = string(kv.Value)
+				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[reqToMsg].Strategy {
+					myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
+				}
+				if routerStrategy.Random == routerStrategy.ServiceConfigs[reqToMsg].Strategy {
+					myServicesStorage.AddRandom(string(kv.Key), string(kv.Value))
+				}
+			}
+			myServicesStorage.Unlock()
+		}
+		// 开启监听
+		go WatchServiceName(reqToMsg)
+	}
+}
+
 // 服务发现
 func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.DiscoverServiceRequest) (*pb.DiscoverServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	var addr string
 	if req.FixedRouterAddr == "" {
+		// 拉取动态键值
 		if _, ok := myServicesStorage.DynamicRouter[req.ToMsg]; !ok {
 			getRes, err := cli.Get(ctx, req.ToMsg)
 			if err != nil {
@@ -201,51 +237,28 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 				go WatchDynamicRouter(req.ToMsg)
 			}
 		}
-		if endPoint, ok := myServicesStorage.DynamicRouter[req.ToMsg]; ok {
+		if endPoint, ok := myServicesStorage.DynamicRouter[req.ToMsg]; ok { //动态键值路由
 			addr = endPoint
-		} else if len(req.ToMsg) == 1 {
+		} else if len(req.ToMsg) == 1 { //路由选择算法
 			// 如果服务未被发现过，则进行服务发现
-			if !myIsDiscovered.IsDiscovered[req.ToMsg] {
-				//log.Println("FIRST TIME")
-				myIsDiscovered.IsDiscovered[req.ToMsg] = true
-				myServicesStorage.ServicesStorage[req.ToMsg] = make(map[string]string)
-				getRes, err := cli.Get(ctx, req.ToMsg, clientv3.WithPrefix())
-				if err != nil {
-					log.Fatalln(err)
-				}
-
-				if getRes.Count > 0 {
-					myServicesStorage.Lock()
-					for _, kv := range getRes.Kvs {
-						myServicesStorage.ServicesStorage[req.ToMsg][string(kv.Key)] = string(kv.Value)
-						if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
-							myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
-						}
-						if routerStrategy.Random == routerStrategy.ServiceConfigs[req.ToMsg].Strategy {
-							myServicesStorage.AddRandom(string(kv.Key), string(kv.Value))
-						}
-					}
-					myServicesStorage.Unlock()
-				}
-				go WatchServiceName(req.ToMsg)
-			}
-
+			storageInit(ctx, cli, req.ToMsg)
 			// 打印 req.ToMsg 类的服务
 			/*
 				printWant(req.ToMsg)
 			*/
-
 			// 获取服务配置
 			config, ok := routerStrategy.ServiceConfigs[req.ToMsg]
 			if !ok {
 				return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
 			}
+			//路由选择
 			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
 		}
-	} else {
+	} else { // 指定目标路由
+		// 如果服务未被发现过，则进行服务发现
+		storageInit(ctx, cli, req.ToMsg)
 		addr = req.FixedRouterAddr
-
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
@@ -254,7 +267,6 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			return nil, err
 		}
 		conn.Close()
-
 	}
 	// 连接另外一个 sidecar
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -262,12 +274,11 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
 	}
 	defer conn.Close()
-
 	c := pb.NewMiniGameRouterClient(conn)
-
 	helloReq := &pb.HelloRequest{
 		Msg: req.FromMsg,
 	}
+	// 让另一个sidecar调用自己负责的服务
 	helloRes, err := c.SayHello(ctx, helloReq)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to grpc another sidecar: %s", err)
@@ -276,6 +287,8 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		Msg: helloRes.Msg,
 	}, nil
 }
+
+// 设置动态键值
 func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
@@ -295,7 +308,7 @@ func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRe
 	}, nil
 }
 
-// 简单的问候服务
+// sidecar调用服务端的问候服务
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
 	addr := fmt.Sprintf("%s:%d", *ip, *port-1)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))

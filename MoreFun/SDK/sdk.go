@@ -22,7 +22,7 @@ type MiniGameRouterServer struct {
 }
 
 // DiscoverService 发现服务
-func DiscoverService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient, serviceName string, fixedRouter string) (*pb.DiscoverServiceResponse, error) {
+func discoverService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient, serviceName string, fixedRouter string) (*pb.DiscoverServiceResponse, error) {
 	req := &pb.DiscoverServiceRequest{
 		FromMsg:         fmt.Sprintf("%s_%s:%d", *endPoint.Name, *endPoint.Ip, *endPoint.Port),
 		ToMsg:           serviceName,
@@ -55,7 +55,7 @@ func Init(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClien
 	}
 
 	// 注册自己的服务
-	rRes, err := RegisterService(endPoint, client)
+	rRes, err := registerService(endPoint, client)
 	if err != nil {
 		log.Fatalf("Could not register service: %v", err)
 	}
@@ -84,7 +84,7 @@ func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGam
 }
 
 // RegisterService 注册服务
-func RegisterService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) (*pb.RegisterServiceResponse, error) {
+func registerService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) (*pb.RegisterServiceResponse, error) {
 	req := &pb.RegisterServiceRequest{
 		Service: &pb.Service{
 			Name:     *endPoint.Name,
@@ -120,7 +120,7 @@ func grpcDiscover(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient, s
 		}
 		fixedRouterAddr = fmt.Sprintf("%s:%d", partsFixedRouterAddr[0], portInt+1)
 	}
-	helloRes, err := DiscoverService(endPoint, client, serviceName, fixedRouterAddr)
+	helloRes, err := discoverService(endPoint, client, serviceName, fixedRouterAddr)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -158,6 +158,9 @@ func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Enter the name of the service you need and the 'ip:port' for the service if your know it (or press Ctrl+C to exit):")
 	for scanner.Scan() {
+		if scanner.Text() == "exit" {
+			return
+		}
 		if scanner.Text() == "" {
 			continue
 		}

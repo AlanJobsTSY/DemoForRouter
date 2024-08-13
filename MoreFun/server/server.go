@@ -4,12 +4,16 @@ import (
 	"MoreFun/SDK"
 	"MoreFun/endPoint"
 	pb "MoreFun/proto"
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"os"
+	"strconv"
+	"sync"
 )
 
 // 定义命令行参数
@@ -52,20 +56,71 @@ func startGRPCServer(port int) {
 	}
 }
 
+var (
+	epSlice     []*endPoint.EndPoint
+	clientSlice []*pb.MiniGameRouterClient
+	connSlice   []*grpc.ClientConn
+	numServers  = 2
+	wg          sync.WaitGroup
+	mu          sync.Mutex
+)
+
+func initGRPCClients() {
+	for i := 0; i < numServers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			currPort := *port + 2*i
+			go startGRPCServer(currPort)
+			endpoint := endPoint.EndPoint{
+				Name:     name,
+				Ip:       ip,
+				Port:     &currPort,
+				Protocol: protocol,
+				Weight:   weight,
+				Status:   status,
+			}
+			conn, client := SDK.Init(&endpoint)
+			//defer conn.Close()
+
+			mu.Lock()
+			epSlice = append(epSlice, &endpoint)
+			clientSlice = append(clientSlice, &client)
+			connSlice = append(connSlice, conn)
+			mu.Unlock()
+		}(i)
+	}
+	wg.Wait()
+}
+
+func handleUserInput() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("Enter index: ")
+		scanner.Scan()
+		input := scanner.Text()
+		index, err := strconv.Atoi(input)
+		if err != nil || index < 0 || index >= len(epSlice) {
+			fmt.Println("Invalid index")
+			continue
+		}
+
+		endpoint := epSlice[index]
+		client := *clientSlice[index]
+
+		SDK.Input(endpoint, client)
+	}
+}
+func closeConnections() {
+	for _, conn := range connSlice {
+		conn.Close()
+	}
+}
 func main() {
 	flag.Parse()
-	// 启动 gRPC 服务器
-	go startGRPCServer(*port)
-	endpoint := endPoint.EndPoint{
-		Name:     name,
-		Ip:       ip,
-		Port:     port,
-		Protocol: protocol,
-		Weight:   weight,
-		Status:   status,
-	}
-	conn, client := SDK.Init(&endpoint)
-	defer conn.Close()
-	SDK.Input(&endpoint, client)
-
+	epSlice = make([]*endPoint.EndPoint, 0, numServers)
+	clientSlice = make([]*pb.MiniGameRouterClient, 0, numServers)
+	initGRPCClients()
+	defer closeConnections()
+	handleUserInput()
 }
