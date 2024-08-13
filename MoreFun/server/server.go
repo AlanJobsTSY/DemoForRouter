@@ -4,7 +4,6 @@ import (
 	"MoreFun/SDK"
 	"MoreFun/endPoint"
 	pb "MoreFun/proto"
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -12,8 +11,6 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"os"
-	"strconv"
 	"sync"
 )
 
@@ -99,22 +96,6 @@ func initGRPCClients() {
 	wg.Wait()
 }
 
-func handleUserInput() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print("Enter index: ")
-		scanner.Scan()
-		input := scanner.Text()
-		index, err := strconv.Atoi(input)
-		if err != nil || index < 0 || index >= len(epSlice) {
-			fmt.Println("Invalid index")
-			continue
-		}
-		endpoint := epSlice[index]
-		client := *clientSlice[index]
-		SDK.Input(endpoint, client)
-	}
-}
 func closeConnections() {
 	for _, conn := range connSlice {
 		conn.Close()
@@ -127,5 +108,5 @@ func main() {
 	clientSlice = make([]*pb.MiniGameRouterClient, 0, numServers)
 	initGRPCClients()
 	defer closeConnections()
-	handleUserInput()
+	SDK.HandleUserInput(epSlice, clientSlice)
 }
