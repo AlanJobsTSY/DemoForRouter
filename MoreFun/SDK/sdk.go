@@ -91,7 +91,7 @@ func registerService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient
 			Ip:       *endPoint.Ip,
 			Port:     strconv.Itoa(*endPoint.Port + 1),
 			Protocol: *endPoint.Protocol,
-			Weight:   *endPoint.Weight,
+			Weight:   strconv.Itoa(*endPoint.Weight),
 			Status:   *endPoint.Status,
 			ConnNum:  "0",
 		},

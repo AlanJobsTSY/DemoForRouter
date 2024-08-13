@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -22,8 +23,9 @@ var (
 	ip       = flag.String("ip", "localhost", "The server ip")
 	port     = flag.Int("port", 50050, "The server port")
 	protocol = flag.String("protocol", "grpc", "The server protocol")
-	weight   = flag.String("weight", "1", "The server weight")
+	weight   = flag.Int("weight", 1, "The server weight")
 	status   = flag.String("status", "0", "The server status")
+	num      = flag.Int("num", 3, "The server num")
 )
 
 // MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
@@ -61,7 +63,7 @@ var (
 	epSlice     []*endPoint.EndPoint
 	clientSlice []*pb.MiniGameRouterClient
 	connSlice   []*grpc.ClientConn
-	numServers  = 2
+	numServers  int
 	wg          sync.WaitGroup
 	mu          sync.Mutex
 )
@@ -73,12 +75,16 @@ func initGRPCClients() {
 			defer wg.Done()
 			currPort := *port + 2*i
 			go startGRPCServer(currPort)
+			currWeight := rand.Intn(10)
+			if *num == 1 {
+				currWeight = *weight
+			}
 			endpoint := endPoint.EndPoint{
 				Name:     name,
 				Ip:       ip,
 				Port:     &currPort,
 				Protocol: protocol,
-				Weight:   weight,
+				Weight:   &currWeight,
 				Status:   status,
 			}
 			conn, client := SDK.Init(&endpoint)
@@ -105,10 +111,8 @@ func handleUserInput() {
 			fmt.Println("Invalid index")
 			continue
 		}
-
 		endpoint := epSlice[index]
 		client := *clientSlice[index]
-
 		SDK.Input(endpoint, client)
 	}
 }
@@ -119,6 +123,7 @@ func closeConnections() {
 }
 func main() {
 	flag.Parse()
+	numServers = *num
 	epSlice = make([]*endPoint.EndPoint, 0, numServers)
 	clientSlice = make([]*pb.MiniGameRouterClient, 0, numServers)
 	initGRPCClients()

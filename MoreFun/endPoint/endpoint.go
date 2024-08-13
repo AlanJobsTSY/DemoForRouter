@@ -5,6 +5,6 @@ type EndPoint struct {
 	Ip       *string
 	Port     *int
 	Protocol *string
-	Weight   *string
+	Weight   *int
 	Status   *string
 }
