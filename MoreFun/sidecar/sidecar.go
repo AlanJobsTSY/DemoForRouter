@@ -148,6 +148,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 
 		if err != nil {
 			log.Printf("Failed to commit transaction: %v", err)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		break
@@ -341,6 +342,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
+	defer lis.Close()
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
 	log.Printf("Sidecar is listening on port %d", *port)
