@@ -138,26 +138,26 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}
 	time.Sleep(5 * time.Second)
 	// 创建一个kv客户端实现数据插入etcd
-	kv := clientv3.NewKV(cli)
+	//kv := clientv3.NewKV(cli)
 
 	// 开启事务
 	for i := 0; i < 20; i++ {
-		txn := kv.Txn(ctx)
-		// 判断数据库中是否存在 s *Service
-		_, err = txn.If(clientv3.Compare(clientv3.CreateRevision(serviceKey), "=", 0)).
-			Then(
-				clientv3.OpPut(serviceKey, serviceValue, clientv3.WithLease(leaseID)),
-			).
-			Else(
-				clientv3.OpPut(serviceKey, serviceValue, clientv3.WithIgnoreLease()),
-			).
-			Commit()
-
-		if err != nil {
-			log.Printf("Failed to commit transaction: %v", err)
-			time.Sleep(100 * time.Millisecond)
-			continue
+		if grantLease == true {
+			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithLease(leaseID))
+			if err != nil {
+				log.Printf("Failed to registe: %v", err)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+		} else {
+			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithIgnoreLease())
+			if err != nil {
+				log.Printf("Failed to registe: %v", err)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
 		}
+
 		break
 	}
 
