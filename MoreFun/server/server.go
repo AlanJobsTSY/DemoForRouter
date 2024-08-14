@@ -78,6 +78,23 @@ var (
 	mu          sync.Mutex
 )
 
+func isListen(port int) (flag bool) {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.Printf("Server failed to listen on port %d: %v\n", port, err)
+		return false
+	}
+	defer ln.Close() // 确保在函数返回前关闭监听器
+
+	sidecarLn, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
+	if err != nil {
+		log.Printf("Sidecar failed to listen on port %d: %v\n", port+1, err)
+		return false
+	}
+	defer sidecarLn.Close() // 确保在函数返回前关闭监听器
+
+	return true
+}
 func initGRPCClients() {
 	limiter := rate.NewLimiter(20, 20)
 	for i := 0; i < numServers; i++ {
@@ -86,6 +103,9 @@ func initGRPCClients() {
 		go func(i int) {
 			defer wg.Done()
 			currPort := *port + 2*i
+			if ok := isListen(currPort); ok == false {
+				return
+			}
 			go startGRPCServer(currPort)
 			currWeight := rand.Intn(10) + 1
 			if *num == 1 {
