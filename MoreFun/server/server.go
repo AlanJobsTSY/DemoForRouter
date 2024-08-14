@@ -30,10 +30,13 @@ type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 	port  int
 	times int
+	mu    sync.Mutex
 }
 
 // SayHello 实现了 gRPC 的 SayHello 方法
 func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	fmt.Printf("Recv msg: %v times: %d\n", req.Msg, s.times)
 	s.times += 1
 	return &pb.HelloResponse{
@@ -85,7 +88,6 @@ func initGRPCClients() {
 			}
 			conn, client := SDK.Init(&endpoint)
 			//defer conn.Close()
-
 			mu.Lock()
 			epSlice = append(epSlice, &endpoint)
 			clientSlice = append(clientSlice, &client)
