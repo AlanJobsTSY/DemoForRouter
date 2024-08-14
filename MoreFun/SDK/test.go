@@ -4,7 +4,9 @@ import (
 	"MoreFun/endPoint"
 	pb "MoreFun/proto"
 	"bufio"
+	"context"
 	"fmt"
+	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"strconv"
@@ -198,11 +200,14 @@ func testSpecificServiceToRoute(epSlice []*endPoint.EndPoint, clientSlice []*pb.
 		fmt.Println("Invalid number")
 		return
 	}
+	limiter := rate.NewLimiter(2000, 500)
 	var wg sync.WaitGroup
 	for i := 0; i < times; i++ {
+		limiter.Wait(context.Background())
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			helloRes, err := discoverService(epSlice[index], *clientSlice[index], serviceType, targetRoute)
 			if err != nil {
 				log.Printf("Error: %v", err)
