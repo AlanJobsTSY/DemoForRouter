@@ -47,10 +47,18 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 
 // startGRPCServer 启动 gRPC 服务器
 func startGRPCServer(port int) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		log.Printf("Failed to listen: %v\n", err)
+	var lis net.Listener
+	var err error
+	for i := 0; i < 3; i++ {
+		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err == nil {
+			break
+		}
+		if lis != nil {
+			lis.Close() // 确保关闭上一次的监听器
+		}
 	}
+
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port, times: 1})
 	log.Printf("Server is listening on port %d", port)
