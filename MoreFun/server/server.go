@@ -82,7 +82,6 @@ func isListen(port int) (flag bool) {
 		return false
 	}
 	defer ln.Close() // 确保在函数返回前关闭监听器
-
 	sidecarLn, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
 	if err != nil {
 		log.Printf("Sidecar failed to listen on port %d: %v\n", port+1, err)
@@ -93,7 +92,7 @@ func isListen(port int) (flag bool) {
 	return true
 }
 func initGRPCClients() {
-	limiter := rate.NewLimiter(20, 20)
+	limiter := rate.NewLimiter(200, 200)
 	for i := 0; i < numServers; i++ {
 		limiter.Wait(context.Background())
 		wg.Add(1)
