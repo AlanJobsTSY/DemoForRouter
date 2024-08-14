@@ -50,7 +50,6 @@ func startGRPCServer(port int) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Printf("Failed to listen: %v\n", err)
-		return
 	}
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port, times: 1})
@@ -58,6 +57,20 @@ func startGRPCServer(port int) {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
+}
+
+func isListen(port int) (flag bool) {
+	_, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.Printf("Server failed to listen : %v\n", err)
+		return false
+	}
+	_, err = net.Listen("tcp", fmt.Sprintf(":%d", port+1))
+	if err != nil {
+		log.Printf("Sidecar failed to listen: %v\n", err)
+		return false
+	}
+	return true
 }
 
 var (
@@ -70,13 +83,22 @@ var (
 )
 
 func initGRPCClients() {
-	limiter := rate.NewLimiter(5, 5)
-	for i := 0; i < numServers; i++ {
+	limiter := rate.NewLimiter(20, 20)
+	currServernum := 0
+	i := 0
+	for {
+		if currServernum == numServers {
+			break
+		}
 		limiter.Wait(context.Background())
 		wg.Add(1)
-		go func(i int, port int) {
+		go func(i int) {
 			defer wg.Done()
-			currPort := port + 2*i
+			currPort := *port + 2*i
+			islis := isListen(currPort)
+			if islis == false {
+				return
+			}
 			go startGRPCServer(currPort)
 			currWeight := rand.Intn(10) + 1
 			if *num == 1 {
@@ -96,8 +118,11 @@ func initGRPCClients() {
 			epSlice = append(epSlice, &endpoint)
 			clientSlice = append(clientSlice, &client)
 			connSlice = append(connSlice, conn)
+			currServernum += 1
 			mu.Unlock()
-		}(i, *port)
+
+		}(i)
+		i += 1
 	}
 	wg.Wait()
 }
