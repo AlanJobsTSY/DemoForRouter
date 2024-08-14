@@ -69,7 +69,7 @@ var (
 )
 
 func initGRPCClients() {
-	limiter := rate.NewLimiter(5, 5)
+	limiter := rate.NewLimiter(1, 1)
 	for i := 0; i < numServers; i++ {
 		limiter.Wait(context.Background())
 		wg.Add(1)

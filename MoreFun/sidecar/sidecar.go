@@ -120,7 +120,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
 		if err != nil {
 			log.Printf("Failed to get service key: %v", err)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Second)
 			continue
 		}
 		break
