@@ -361,6 +361,6 @@ func main() {
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
 	log.Printf("Sidecar is listening on port %d", *port)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		log.Printf("Failed to serve: %v", err)
 	}
 }
