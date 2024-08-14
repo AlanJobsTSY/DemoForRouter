@@ -138,7 +138,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	time.Sleep(5 * time.Second)
 	// 创建一个kv客户端实现数据插入etcd
 	kv := clientv3.NewKV(cli)
-
+	log.Printf("1")
 	// 开启事务
 	for i := 0; i < 20; i++ {
 		txn := kv.Txn(ctx)
@@ -159,7 +159,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		break
 	}
-	log.Printf("1")
+
 	// 租约保活机制
 	if grantLease {
 		go func() {
