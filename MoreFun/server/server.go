@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os/exec"
 	"sync"
 	"time"
 )
@@ -46,6 +47,11 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 	}, nil
 }
 
+func killProcessOnPort(port int) error {
+	cmd := exec.Command("fuser", "-k", fmt.Sprintf("%d/tcp", port))
+	return cmd.Run()
+}
+
 // startGRPCServer 启动 gRPC 服务器
 func startGRPCServer(port int) {
 	var lis net.Listener
@@ -55,8 +61,10 @@ func startGRPCServer(port int) {
 		if err == nil {
 			break
 		}
-		if lis != nil {
-			lis.Close() // 确保关闭上一次的监听器
+		if killErr := killProcessOnPort(port); killErr != nil {
+			log.Printf("Failed to free port %d: %v", port, killErr)
+		} else {
+			log.Printf("Successfully freed port %d", port)
 		}
 		time.Sleep(2 * time.Second)
 	}
