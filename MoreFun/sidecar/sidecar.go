@@ -350,7 +350,7 @@ func main() {
 		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", *port))
 		if err != nil {
 			log.Printf("Failed to listen: %v", err)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Second)
 			continue
 		}
 		break
