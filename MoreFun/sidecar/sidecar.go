@@ -125,7 +125,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		break
 	}
-
+	log.Printf("1")
 	// 没有注册过则创建一个租约，同时将租约的ID赋值给leaseID
 	if getRes.Count == 0 {
 		grantLease = true
@@ -134,7 +134,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 			log.Fatalf("Failed to grant lease: %v", err)
 		}
 		leaseID = leaseRes.ID
-		log.Printf("1")
+		log.Printf("2")
 	}
 	time.Sleep(5 * time.Second)
 	// 创建一个kv客户端实现数据插入etcd
@@ -160,7 +160,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		break
 	}
-
+	log.Printf("3")
 	// 租约保活机制
 	if grantLease {
 		go func() {
