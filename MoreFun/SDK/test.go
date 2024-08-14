@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
@@ -202,6 +203,8 @@ func testSpecificServiceToRoute(epSlice []*endPoint.EndPoint, clientSlice []*pb.
 	}
 	limiter := rate.NewLimiter(2000, 5000)
 	var wg sync.WaitGroup
+	// 记录开始时间
+	startTime := time.Now()
 	for i := 0; i < times; i++ {
 		limiter.Wait(context.Background())
 		wg.Add(1)
@@ -217,4 +220,6 @@ func testSpecificServiceToRoute(epSlice []*endPoint.EndPoint, clientSlice []*pb.
 		}()
 	}
 	wg.Wait()
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
 }
