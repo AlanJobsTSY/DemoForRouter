@@ -49,7 +49,8 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 func startGRPCServer(port int) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v\n", err)
+		log.Printf("Failed to listen: %v\n", err)
+		return
 	}
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port, times: 1})
