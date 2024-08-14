@@ -269,7 +269,7 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		// 如果服务未被发现过，则进行服务发现
 		storageInit(ctx, cli, req.ToMsg)
 		addr = req.FixedRouterAddr
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
