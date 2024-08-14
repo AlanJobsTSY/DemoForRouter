@@ -91,7 +91,7 @@ func initGRPCClients() {
 	currServernum := 0
 	i := 0
 	for {
-		log.Printf("     %d", i)
+		log.Printf("     %d  %d  %d", i, currServernum, numServers)
 		if currServernum == numServers {
 			break
 		}
