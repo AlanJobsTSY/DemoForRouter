@@ -73,9 +73,9 @@ func initGRPCClients() {
 	for i := 0; i < numServers; i++ {
 		limiter.Wait(context.Background())
 		wg.Add(1)
-		go func(i int) {
+		go func(i int, port int) {
 			defer wg.Done()
-			currPort := *port + 2*i
+			currPort := port + 2*i
 			go startGRPCServer(currPort)
 			currWeight := rand.Intn(10) + 1
 			if *num == 1 {
@@ -96,7 +96,7 @@ func initGRPCClients() {
 			clientSlice = append(clientSlice, &client)
 			connSlice = append(connSlice, conn)
 			mu.Unlock()
-		}(i)
+		}(i, *port)
 	}
 	wg.Wait()
 }
