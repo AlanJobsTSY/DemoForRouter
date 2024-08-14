@@ -60,16 +60,20 @@ func startGRPCServer(port int) {
 }
 
 func isListen(port int) (flag bool) {
-	_, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Printf("Server failed to listen : %v\n", err)
+		log.Printf("Server failed to listen on port %d: %v\n", port, err)
 		return false
 	}
-	_, err = net.Listen("tcp", fmt.Sprintf(":%d", port+1))
+	defer ln.Close() // 确保在函数返回前关闭监听器
+
+	sidecarLn, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
 	if err != nil {
-		log.Printf("Sidecar failed to listen: %v\n", err)
+		log.Printf("Sidecar failed to listen on port %d: %v\n", port+1, err)
 		return false
 	}
+	defer sidecarLn.Close() // 确保在函数返回前关闭监听器
+
 	return true
 }
 
