@@ -134,6 +134,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 			log.Fatalf("Failed to grant lease: %v", err)
 		}
 		leaseID = leaseRes.ID
+		log.Printf("1")
 	}
 
 	// 创建一个kv客户端实现数据插入etcd
