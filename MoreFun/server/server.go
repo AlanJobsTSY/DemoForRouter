@@ -87,10 +87,11 @@ var (
 )
 
 func initGRPCClients() {
-	limiter := rate.NewLimiter(20, 20)
+	limiter := rate.NewLimiter(5, 5)
 	currServernum := 0
 	i := 0
 	for {
+		log.Printf("     %d", i)
 		if currServernum == numServers {
 			break
 		}
