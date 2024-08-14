@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net"
 	"sync"
+	"time"
 )
 
 // 定义命令行参数
@@ -49,7 +50,7 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 func startGRPCServer(port int) {
 	var lis net.Listener
 	var err error
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 10; i++ {
 		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err == nil {
 			break
@@ -57,6 +58,7 @@ func startGRPCServer(port int) {
 		if lis != nil {
 			lis.Close() // 确保关闭上一次的监听器
 		}
+		time.Sleep(2 * time.Second)
 	}
 
 	s := grpc.NewServer()
