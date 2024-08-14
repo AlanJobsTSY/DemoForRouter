@@ -201,7 +201,7 @@ func testSpecificServiceToRoute(epSlice []*endPoint.EndPoint, clientSlice []*pb.
 		fmt.Println("Invalid number")
 		return
 	}
-	limiter := rate.NewLimiter(1000, 2000)
+	limiter := rate.NewLimiter(500, 500)
 	var wg sync.WaitGroup
 	// 记录开始时间
 	startTime := time.Now()
