@@ -76,7 +76,7 @@ func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGam
 			client := pb.NewMiniGameRouterClient(conn)
 			return conn, client, nil
 		}
-		log.Printf("fail times: %d", i)
+		//log.Printf("fail times: %d", i)
 		// 连接失败，等待 0.1 秒后重试
 		//fmt.Printf("Failed to connect to sidecar at %s: %v. Retrying...\n", addr, err)
 		time.Sleep(100 * time.Millisecond)
