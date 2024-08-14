@@ -145,14 +145,14 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		if grantLease == true {
 			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithLease(leaseID))
 			if err != nil {
-				log.Printf("Failed to registe: %v", err)
+				log.Printf("Failed to registe withlease: %v", err)
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
 		} else {
 			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithIgnoreLease())
 			if err != nil {
-				log.Printf("Failed to registe: %v", err)
+				log.Printf("Failed to registe withIgnoreLease: %v", err)
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
