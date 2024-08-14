@@ -92,7 +92,7 @@ func isListen(port int) (flag bool) {
 	return true
 }
 func initGRPCClients() {
-	limiter := rate.NewLimiter(200, 200)
+	limiter := rate.NewLimiter(100, 100)
 	for i := 0; i < numServers; i++ {
 		limiter.Wait(context.Background())
 		wg.Add(1)

@@ -7,7 +7,7 @@ import (
 )
 
 // DialTimeout 连接etcd服务器的超时时间
-const DialTimeout = time.Second * 5
+const DialTimeout = time.Second * 20
 
 // GetEtcdEndpoints etcd集群所有节点的ip列表
 func GetEtcdEndpoints() []string {
