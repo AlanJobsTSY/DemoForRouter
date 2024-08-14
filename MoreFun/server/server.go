@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"log"
 	"math/rand"
@@ -68,7 +69,9 @@ var (
 )
 
 func initGRPCClients() {
+	limiter := rate.NewLimiter(500, 500)
 	for i := 0; i < numServers; i++ {
+		limiter.Wait(context.Background())
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
