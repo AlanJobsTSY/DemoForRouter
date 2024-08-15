@@ -71,6 +71,9 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 }
 
 func main() {
+	kvs = make(map[string]string)
+	kvb = make(map[string]bool)
+	kvl = make(map[string]*clientv3.LeaseID)
 	flag.Parse()
 	var lis net.Listener
 	var err error
