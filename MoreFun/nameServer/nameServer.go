@@ -55,6 +55,7 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	if len(ops) > 0 {
 		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
 			log.Printf("批量失败提交")
+			return nil, err
 		}
 	}
 	// 清空全局变量

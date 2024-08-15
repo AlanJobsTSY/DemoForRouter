@@ -105,30 +105,12 @@ func initGRPCClients() {
 		log.Fatalf("Failed to create producer: %s", err)
 	}
 	defer p.Close() // 在函数结束时关闭生产者
-	wg.Wait()
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *ip, *portNS), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("ns connect err")
-	}
-	defer conn.Close()
-	c := pb.NewMiniGameRouterClient(conn)
+
 	topic := "myTopic" // 定义要发送消息的Kafka主题
 	limiter := rate.NewLimiter(100, 100)
 	for i := 0; i < numServers; i++ {
 		if i != 0 && i%200 == 0 {
-			for i := 0; i < 20; i++ {
-				_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
-				if err != nil {
-					log.Printf("commit err,retry")
-					time.Sleep(100 * time.Millisecond)
-					continue
-				}
-				break
-			}
-			if err != nil {
-				log.Printf("commit err")
-			}
-			time.Sleep(20 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 		limiter.Wait(context.Background())
 		wg.Add(1)
@@ -181,7 +163,25 @@ func initGRPCClients() {
 			fmt.Println("Message sent successfully")
 		}(i)
 	}
-
+	wg.Wait()
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *ip, *portNS), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("ns connect err")
+	}
+	defer conn.Close()
+	c := pb.NewMiniGameRouterClient(conn)
+	for i := 0; i < 20; i++ {
+		_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
+		if err != nil {
+			log.Printf("commit err,retry")
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		log.Printf("commit err")
+	}
 	log.Printf("commit success")
 }
 
