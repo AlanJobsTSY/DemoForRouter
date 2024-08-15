@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// 创建一个新的Kafka生产者实例，配置Kafka服务器地址
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "9.135.119.71:22222"})
 	if err != nil {
 		log.Fatalf("Failed to create producer: %s", err)
 	}

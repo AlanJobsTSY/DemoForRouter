@@ -6,11 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/minigame_router.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/minigame_router.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sidecar/sidecar.go" beforeDir="false" afterPath="$PROJECT_DIR$/sidecar/sidecar.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/consume.go" beforeDir="false" afterPath="$PROJECT_DIR$/consume.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/produce.go" beforeDir="false" afterPath="$PROJECT_DIR$/produce.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd0.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd0.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd1.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd1.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd2.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd2.yaml" afterDir="false" />
