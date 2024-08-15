@@ -107,11 +107,11 @@ func initGRPCClients() {
 	defer p.Close() // 在函数结束时关闭生产者
 
 	topic := "myTopic" // 定义要发送消息的Kafka主题
-	limiter := rate.NewLimiter(100, 100)
+	limiter := rate.NewLimiter(100, 200)
 	for i := 0; i < numServers; i++ {
-		if i != 0 && i%200 == 0 {
+		/*if i != 0 && i%200 == 0 {
 			time.Sleep(30 * time.Second)
-		}
+		}*/
 		limiter.Wait(context.Background())
 		wg.Add(1)
 		go func(i int) {

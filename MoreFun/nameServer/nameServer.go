@@ -23,7 +23,7 @@ type MiniGameRouterServer struct {
 
 // 定义命令行参数，用于指定 sidecar 的端口
 var (
-	ip   = flag.String("ip", "localhost", "The ns ip")
+	ip   = flag.String("ip", "9.135.119.71", "The ns ip")
 	port = flag.Int("port", 50051, "The ns port")
 	kvs  map[string]string
 	kvb  map[string]bool
