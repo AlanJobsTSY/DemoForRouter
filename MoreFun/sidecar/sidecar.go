@@ -141,16 +141,23 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	//kv := clientv3.NewKV(cli)
 	//test
 	kvs := make(map[string]string)
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 2000; i++ {
 		kvs[serviceKey+strconv.Itoa(i)] = serviceValue
 	}
 	ops := make([]clientv3.Op, 0, len(kvs))
 	for k, v := range kvs {
 		ops = append(ops, clientv3.OpPut(k, v, clientv3.WithLease(leaseID)))
+		if len(ops) == 128 {
+			if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
+				log.Printf("批量失败提交")
+			}
+			ops = ops[:0] // 清空 ops 列表
+		}
 	}
-	_, err = cli.Txn(context.Background()).Then(ops...).Commit()
-	if err != nil {
-		log.Printf("批量失败提交")
+	if len(ops) > 0 {
+		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
+			log.Printf("批量失败提交")
+		}
 	}
 
 	/*
