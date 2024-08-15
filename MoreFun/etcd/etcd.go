@@ -21,7 +21,7 @@ func NewEtcdCli() *clientv3.Client {
 		DialTimeout: DialTimeout,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("ETCD Error: %v\n", err)
 	}
 	return cli
 }

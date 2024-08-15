@@ -171,6 +171,7 @@ func initGRPCClients() {
 	defer conn.Close()
 	c := pb.NewMiniGameRouterClient(conn)
 	for i := 0; i < 20; i++ {
+		log.Printf("tsytsytsy")
 		_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
 		if err != nil {
 			log.Printf("commit err,retry")
