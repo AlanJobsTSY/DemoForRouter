@@ -48,9 +48,12 @@ func random(myServicesStorage *ServicesStorage, svrName string) string {
 }
 
 func (ss *ServicesStorage) DeleteRandom(svrName string) {
-	ss.RandomStorage.RandomList[ss.RandomStorage.RandomMap[svrName]] = ss.RandomStorage.RandomList[len(ss.RandomStorage.RandomList)-1]
+	if ss.RandomStorage.RandomMap[svrName] < len(ss.RandomStorage.RandomList) {
+		ss.RandomStorage.RandomList[ss.RandomStorage.RandomMap[svrName]] = ss.RandomStorage.RandomList[len(ss.RandomStorage.RandomList)-1]
+	}
 	ss.RandomStorage.RandomList = ss.RandomStorage.RandomList[:len(ss.RandomStorage.RandomList)-1]
 	delete(ss.RandomStorage.RandomMap, svrName)
+
 }
 
 func (ss *ServicesStorage) AddRandom(svrName string, ip string) {
