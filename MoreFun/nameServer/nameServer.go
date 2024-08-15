@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -27,11 +28,13 @@ var (
 	kvs  map[string]string
 	kvb  map[string]bool
 	kvl  map[string]*clientv3.LeaseID
+	mu   sync.Mutex
 )
 
 func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
+	mu.Lock()
 	ops := make([]clientv3.Op, 0, len(kvs))
 	for k, v := range kvs {
 		var op clientv3.Op
@@ -58,7 +61,7 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	kvs = make(map[string]string)
 	kvb = make(map[string]bool)
 	kvl = make(map[string]*clientv3.LeaseID)
-
+	mu.Unlock()
 	return &pb.CommitResponse{
 		Msg: "批量提交成功",
 	}, nil
