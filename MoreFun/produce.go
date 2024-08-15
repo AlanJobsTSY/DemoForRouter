@@ -46,6 +46,6 @@ func main() {
 	}
 
 	// 等待消息传递完成，最多等待15秒
-	p.Flush(15 * 1000)
+	p.Flush(30 * 1000)
 	fmt.Println("Message sent successfully")
 }
