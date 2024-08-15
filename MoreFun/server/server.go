@@ -159,8 +159,8 @@ func initGRPCClients() {
 			}
 
 			// 等待消息传递完成，最多等待15秒
-			p.Flush(30 * 1000)
-			fmt.Println("Message sent successfully")
+			//p.Flush(30 * 1000)
+			//fmt.Println("Message sent successfully")
 		}(i)
 	}
 	wg.Wait()

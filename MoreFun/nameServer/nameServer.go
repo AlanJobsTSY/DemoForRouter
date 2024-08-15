@@ -115,7 +115,7 @@ func startKafkaConsumer() {
 	defer c.Close()
 
 	c.SubscribeTopics([]string{"myTopic"}, nil)
-
+	index := 0
 	for {
 		msg, err := c.ReadMessage(-1)
 		if err == nil {
@@ -126,7 +126,8 @@ func startKafkaConsumer() {
 				log.Printf("Failed to unmarshal message: %s", err)
 				continue
 			}
-			log.Printf("rece succss")
+			index += 1
+			log.Printf("[%d]: receive succss", index)
 			leaseID := clientv3.LeaseID(rRes.LeaseID)
 			kvs[rRes.SvrKey] = rRes.SvrValue
 			kvb[rRes.SvrKey] = rRes.IsLease
