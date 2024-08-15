@@ -122,6 +122,7 @@ func startKafkaConsumer() {
 				log.Printf("Failed to unmarshal message: %s", err)
 				continue
 			}
+			log.Printf("rece succss")
 			leaseID := clientv3.LeaseID(rRes.LeaseID)
 			kvs[rRes.SvrKey] = rRes.SvrValue
 			kvb[rRes.SvrKey] = rRes.IsLease
