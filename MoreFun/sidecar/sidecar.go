@@ -134,7 +134,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		leaseID = leaseRes.ID
 	}
-	log.Printf("%s", req.NsIp)
+	//log.Printf("%s", req.NsIp)
 	conn, err := grpc.Dial(req.NsIp, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)

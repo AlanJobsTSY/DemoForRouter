@@ -23,7 +23,6 @@ message WriteRequest{
   string svrValue=2;
   bool  isLease=3;
   int64 leaseID=4;
-
 }
 message WriteResponse{
   string msg =1;

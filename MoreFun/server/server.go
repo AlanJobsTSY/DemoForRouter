@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
 	"net"
@@ -137,16 +136,17 @@ func initGRPCClients() {
 		}(i)
 	}
 	wg.Wait()
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *ip, *portNS), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("ns connect err")
-	}
-	defer conn.Close()
-	c := pb.NewMiniGameRouterClient(conn)
-	_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
-	if err != nil {
-		log.Printf("commit err")
-	}
+	/*
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *ip, *portNS), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("ns connect err")
+		}
+		defer conn.Close()
+		c := pb.NewMiniGameRouterClient(conn)
+		_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
+		if err != nil {
+			log.Printf("commit err")
+		}*/
 }
 
 func closeConnections() {

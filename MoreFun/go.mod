@@ -3,6 +3,7 @@ module MoreFun
 go 1.22
 
 require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/emirpasic/gods v1.18.1
 	go.etcd.io/etcd/client/v3 v3.5.15
 	golang.org/x/time v0.6.0
