@@ -57,6 +57,9 @@ func startGRPCServer(port int) {
 		}
 		time.Sleep(2 * time.Second)
 	}
+	if err != nil {
+		return
+	}
 
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{port: port, times: 1})
@@ -95,7 +98,7 @@ func initGRPCClients() {
 	limiter := rate.NewLimiter(100, 100)
 	for i := 0; i < numServers; i++ {
 		if i != 0 && i%200 == 0 {
-			time.Sleep(20 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 		limiter.Wait(context.Background())
 		wg.Add(1)
