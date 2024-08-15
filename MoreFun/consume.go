@@ -13,7 +13,7 @@ func main() {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost:9092",
 		"group.id":          "myGroup",
-		"auto.offset.reset": "earliest",
+		"auto.offset.reset": "latest",
 	})
 	if err != nil {
 		log.Fatalf("Failed to create consumer: %s", err)
