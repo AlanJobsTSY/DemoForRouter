@@ -42,7 +42,7 @@ func startSidecar(endPoint *endPoint.EndPoint) error {
 	return cmd.Start()
 }
 
-func Init(endPoint *endPoint.EndPoint, portNS *int) (*grpc.ClientConn, pb.MiniGameRouterClient) {
+func Init(endPoint *endPoint.EndPoint, portNS *int) (*pb.RegisterServiceResponse, *grpc.ClientConn, pb.MiniGameRouterClient) {
 	// 启动 sidecar
 	if err := startSidecar(endPoint); err != nil {
 		log.Fatalf("Failed to start sidecar: %v", err)
@@ -59,9 +59,9 @@ func Init(endPoint *endPoint.EndPoint, portNS *int) (*grpc.ClientConn, pb.MiniGa
 	if err != nil {
 		log.Fatalf("Could not register service: %v", err)
 	}
-	log.Printf("Response: %s", rRes.Msg)
+	log.Printf("Response: add成功")
 
-	return conn, client
+	return rRes, conn, client
 }
 
 // connectToSidecar 连接到 sidecar

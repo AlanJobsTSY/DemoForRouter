@@ -6,8 +6,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
 	"time"
@@ -26,14 +28,6 @@ var (
 	kvb  map[string]bool
 	kvl  map[string]*clientv3.LeaseID
 )
-
-func (s *MiniGameRouterServer) WriteServers(ctx context.Context, req *pb.WriteRequest) (*pb.WriteResponse, error) {
-	leaseID := clientv3.LeaseID(req.LeaseID)
-	kvs[req.SvrKey] = req.SvrValue
-	kvb[req.SvrKey] = req.IsLease
-	kvl[req.SvrKey] = &leaseID
-	return nil, nil
-}
 
 func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
 	cli := etcd.NewEtcdCli()
@@ -75,6 +69,11 @@ func main() {
 	kvb = make(map[string]bool)
 	kvl = make(map[string]*clientv3.LeaseID)
 	flag.Parse()
+
+	// 启动Kafka消费者的协程
+	go startKafkaConsumer()
+
+	// 启动gRPC服务器
 	var lis net.Listener
 	var err error
 	for i := 0; i < 20; i++ {
@@ -97,5 +96,38 @@ func main() {
 	log.Printf("Sidecar is listening on port %d", *port)
 	if err := s.Serve(lis); err != nil {
 		log.Printf("Failed to serve: %v", err)
+	}
+}
+
+func startKafkaConsumer() {
+	c, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": "localhost:9092",
+		"group.id":          "myGroup",
+		"auto.offset.reset": "earliest",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create consumer: %s", err)
+	}
+	defer c.Close()
+
+	c.SubscribeTopics([]string{"myTopic"}, nil)
+
+	for {
+		msg, err := c.ReadMessage(-1)
+		if err == nil {
+			// 反序列化消息
+			var rRes pb.RegisterServiceResponse
+			err := proto.Unmarshal(msg.Value, &rRes)
+			if err != nil {
+				log.Printf("Failed to unmarshal message: %s", err)
+				continue
+			}
+			leaseID := clientv3.LeaseID(rRes.LeaseID)
+			kvs[rRes.SvrKey] = rRes.SvrValue
+			kvb[rRes.SvrKey] = rRes.IsLease
+			kvl[rRes.SvrKey] = &leaseID
+		} else {
+			log.Printf("Consumer error: %v (%v)\n", err, msg)
+		}
 	}
 }

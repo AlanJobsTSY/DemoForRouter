@@ -7,8 +7,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"math/rand"
 	"net"
@@ -96,6 +98,14 @@ func isListen(port int) (flag bool) {
 	return true
 }
 func initGRPCClients() {
+	// 创建一个新的Kafka生产者实例，配置Kafka服务器地址
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	if err != nil {
+		log.Fatalf("Failed to create producer: %s", err)
+	}
+	defer p.Close() // 在函数结束时关闭生产者
+
+	topic := "myTopic" // 定义要发送消息的Kafka主题
 	limiter := rate.NewLimiter(100, 100)
 	for i := 0; i < numServers; i++ {
 		if i != 0 && i%200 == 0 {
@@ -125,14 +135,31 @@ func initGRPCClients() {
 				Weight:   &currWeight,
 				Status:   status,
 			}
-			conn, client := SDK.Init(&endpoint, portNS)
+			rRes, conn, client := SDK.Init(&endpoint, portNS)
 			//defer conn.Close()
 			mu.Lock()
 			epSlice = append(epSlice, &endpoint)
 			clientSlice = append(clientSlice, &client)
 			connSlice = append(connSlice, conn)
 			mu.Unlock()
+			msgBytes, err := proto.Marshal(rRes)
+			if err != nil {
+				log.Fatalf("Failed to marshal message: %s", err)
+			}
+			// 创建Kafka消息
+			msg := kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny}, // 设置消息的主题和分区
+				Value:          msgBytes,                                                           // 设置消息的内容
+			}
+			// 发送消息到Kafka
+			err = p.Produce(&msg, nil)
+			if err != nil {
+				log.Fatalf("Failed to produce message: %s", err)
+			}
 
+			// 等待消息传递完成，最多等待15秒
+			p.Flush(15 * 1000)
+			fmt.Println("Message sent successfully")
 		}(i)
 	}
 	wg.Wait()

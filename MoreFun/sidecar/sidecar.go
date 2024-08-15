@@ -134,25 +134,28 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		leaseID = leaseRes.ID
 	}
-	//log.Printf("%s", req.NsIp)
-	conn, err := grpc.Dial(req.NsIp, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
-	}
-	defer conn.Close()
-	c := pb.NewMiniGameRouterClient(conn)
-	writeReq := &pb.WriteRequest{
-		SvrKey:   serviceKey,
-		SvrValue: serviceValue,
-		IsLease:  grantLease,
-		LeaseID:  int64(leaseID),
-	}
-	// 让另一个sidecar调用自己负责的服务
-	_, err = c.WriteServers(ctx, writeReq)
-	if err != nil {
-		log.Printf("Write err: %s", err)
-	}
-	//time.Sleep(5 * time.Second)
+	/*
+		//log.Printf("%s", req.NsIp)
+		conn, err := grpc.Dial(req.NsIp, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
+		}
+		defer conn.Close()
+		c := pb.NewMiniGameRouterClient(conn)
+		writeReq := &pb.WriteRequest{
+			SvrKey:   serviceKey,
+			SvrValue: serviceValue,
+			IsLease:  grantLease,
+			LeaseID:  int64(leaseID),
+		}
+		// 让另一个sidecar调用自己负责的服务
+		_, err = c.WriteServers(ctx, writeReq)
+		if err != nil {
+			log.Printf("Write err: %s", err)
+		}
+		//time.Sleep(5 * time.Second)
+	*/
+
 	/*
 
 		// 创建一个kv客户端实现数据插入etcd
@@ -197,7 +200,10 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}
 
 	return &pb.RegisterServiceResponse{
-		Msg: serviceKey + "注册成功",
+		SvrKey:   serviceKey,
+		SvrValue: serviceValue,
+		IsLease:  grantLease,
+		LeaseID:  int64(leaseID),
 	}, nil
 }
 
