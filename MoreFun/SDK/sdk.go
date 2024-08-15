@@ -42,7 +42,7 @@ func startSidecar(endPoint *endPoint.EndPoint) error {
 	return cmd.Start()
 }
 
-func Init(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClient) {
+func Init(endPoint *endPoint.EndPoint, portNS *int) (*grpc.ClientConn, pb.MiniGameRouterClient) {
 	// 启动 sidecar
 	if err := startSidecar(endPoint); err != nil {
 		log.Fatalf("Failed to start sidecar: %v", err)
@@ -55,7 +55,7 @@ func Init(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGameRouterClien
 	}
 
 	// 注册自己的服务
-	rRes, err := registerService(endPoint, client)
+	rRes, err := registerService(endPoint, client, portNS)
 	if err != nil {
 		log.Fatalf("Could not register service: %v", err)
 	}
@@ -85,7 +85,7 @@ func connectToSidecar(endPoint *endPoint.EndPoint) (*grpc.ClientConn, pb.MiniGam
 }
 
 // RegisterService 注册服务
-func registerService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) (*pb.RegisterServiceResponse, error) {
+func registerService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient, portNS *int) (*pb.RegisterServiceResponse, error) {
 	req := &pb.RegisterServiceRequest{
 		Service: &pb.Service{
 			Name:     *endPoint.Name,
@@ -96,6 +96,7 @@ func registerService(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient
 			Status:   *endPoint.Status,
 			ConnNum:  "0",
 		},
+		NsIp: fmt.Sprintf("%s:%d", *endPoint.Ip, *portNS),
 	}
 	return client.RegisterService(context.Background(), req)
 }

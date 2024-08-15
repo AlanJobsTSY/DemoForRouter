@@ -16,6 +16,17 @@ service MiniGameRouter {
   // 简单的问候服务
   rpc SayHello(HelloRequest) returns (HelloResponse);
   rpc CommitService(CommitRequest)returns (CommitResponse);
+  rpc WriteServers(WriteRequest)returns(WriteResponse);
+}
+message WriteRequest{
+  string svrKey =1;
+  string svrValue=2;
+  bool  isLease=3;
+  int64 leaseID=4;
+
+}
+message WriteResponse{
+  string msg =1;
 }
 message CommitRequest{
 
@@ -45,6 +56,8 @@ message Service {
 message RegisterServiceRequest {
   // 服务信息
   Service service = 1;
+  //
+  string nsIp=2;
 }
 
 // 注册服务响应

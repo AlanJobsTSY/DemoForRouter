@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
 	"net"
@@ -25,6 +26,7 @@ var (
 	weight   = flag.Int("weight", 1, "The server weight")
 	status   = flag.String("status", "0", "The server status")
 	num      = flag.Int("num", 3, "The server num")
+	portNS   = flag.Int("portNS", 50050, "The server port")
 )
 
 // MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
@@ -124,7 +126,7 @@ func initGRPCClients() {
 				Weight:   &currWeight,
 				Status:   status,
 			}
-			conn, client := SDK.Init(&endpoint)
+			conn, client := SDK.Init(&endpoint, portNS)
 			//defer conn.Close()
 			mu.Lock()
 			epSlice = append(epSlice, &endpoint)
@@ -135,7 +137,16 @@ func initGRPCClients() {
 		}(i)
 	}
 	wg.Wait()
-
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *ip, *portNS), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("ns connect err")
+	}
+	defer conn.Close()
+	c := pb.NewMiniGameRouterClient(conn)
+	_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
+	if err != nil {
+		log.Printf("commit err")
+	}
 }
 
 func closeConnections() {

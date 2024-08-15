@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SDK/sdk.go" beforeDir="false" afterPath="$PROJECT_DIR$/SDK/sdk.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/minigame_router.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/proto/minigame_router.pb.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/minigame_router.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/minigame_router.proto" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/minigame_router_grpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/proto/minigame_router_grpc.pb.go" afterDir="false" />

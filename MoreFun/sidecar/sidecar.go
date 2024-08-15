@@ -29,10 +29,6 @@ type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
-var kvs map[string]string
-var kvb map[string]bool
-var kvl map[string]*clientv3.LeaseID
-
 // 缓存，用于存储服务发现状态
 var myIsDiscovered = &routerStrategy.IsDiscovered{
 	IsDiscovered: map[string]bool{},
@@ -108,8 +104,6 @@ func WatchDynamicRouter(key string) {
 	}
 }
 
-// 批量注册
-
 // 注册服务
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
@@ -140,10 +134,25 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		leaseID = leaseRes.ID
 	}
-	time.Sleep(5 * time.Second)
-	kvs[serviceKey] = serviceValue
-	kvb[serviceKey] = grantLease
-	kvl[serviceKey] = &leaseID
+	log.Printf("%s", req.NsIp)
+	conn, err := grpc.Dial(req.NsIp, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
+	}
+	defer conn.Close()
+	c := pb.NewMiniGameRouterClient(conn)
+	writeReq := &pb.WriteRequest{
+		SvrKey:   serviceKey,
+		SvrValue: serviceValue,
+		IsLease:  grantLease,
+		LeaseID:  int64(leaseID),
+	}
+	// 让另一个sidecar调用自己负责的服务
+	_, err = c.WriteServers(ctx, writeReq)
+	if err != nil {
+		log.Printf("Write err: %s", err)
+	}
+	//time.Sleep(5 * time.Second)
 	/*
 
 		// 创建一个kv客户端实现数据插入etcd
@@ -190,41 +199,6 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	return &pb.RegisterServiceResponse{
 		Msg: serviceKey + "注册成功",
 	}, nil
-}
-func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
-	cli := etcd.NewEtcdCli()
-	defer cli.Close()
-	ops := make([]clientv3.Op, 0, len(kvs))
-	for k, v := range kvs {
-		var op clientv3.Op
-		if leaseID, ok := kvl[k]; ok && kvb[k] {
-			op = clientv3.OpPut(k, v, clientv3.WithLease(*leaseID))
-		} else {
-			op = clientv3.OpPut(k, v, clientv3.WithIgnoreLease())
-		}
-		ops = append(ops, op)
-		if len(ops) == 128 {
-			if _, err := cli.Txn(ctx).Then(ops...).Commit(); err != nil {
-				log.Printf("批量提交失败: %v", err)
-				return nil, err
-			}
-			ops = ops[:0] // 清空 ops 列表
-		}
-	}
-	if len(ops) > 0 {
-		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
-			log.Printf("批量失败提交")
-		}
-	}
-	// 清空全局变量
-	kvs = make(map[string]string)
-	kvb = make(map[string]bool)
-	kvl = make(map[string]*clientv3.LeaseID)
-
-	return &pb.CommitResponse{
-		Msg: "批量提交成功",
-	}, nil
-
 }
 
 // 打印svrWant类服务的列表供用户选择
