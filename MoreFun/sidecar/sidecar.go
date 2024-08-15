@@ -357,6 +357,9 @@ func main() {
 	}
 
 	defer lis.Close()
+	if err != nil {
+		return
+	}
 	s := grpc.NewServer()
 	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
 	log.Printf("Sidecar is listening on port %d", *port)
