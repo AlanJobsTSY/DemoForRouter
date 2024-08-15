@@ -104,6 +104,7 @@ func WatchDynamicRouter(key string) {
 	}
 }
 
+// 批量注册
 // 注册服务
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
@@ -138,28 +139,42 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	time.Sleep(5 * time.Second)
 	// 创建一个kv客户端实现数据插入etcd
 	//kv := clientv3.NewKV(cli)
-
-	// 开启事务
-	for i := 0; i < 20; i++ {
-		if grantLease == true {
-			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithLease(leaseID))
-			if err != nil {
-				log.Printf("Failed to registe withlease: %v", err)
-				time.Sleep(100 * time.Millisecond)
-				continue
-			}
-		} else {
-			_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithIgnoreLease())
-			if err != nil {
-				log.Printf("Failed to registe withIgnoreLease: %v", err)
-				time.Sleep(100 * time.Millisecond)
-				continue
-			}
-		}
-
-		break
+	//test
+	kvs := make(map[string]string)
+	for i := 0; i < 10000; i++ {
+		kvs[serviceKey+strconv.Itoa(i)] = serviceValue
+	}
+	ops := make([]clientv3.Op, 0, len(kvs))
+	for k, v := range kvs {
+		ops = append(ops, clientv3.OpPut(k, v, clientv3.WithLease(leaseID)))
+	}
+	_, err = cli.Txn(context.Background()).Then(ops...).Commit()
+	if err != nil {
+		log.Printf("批量失败提交")
 	}
 
+	/*
+		// 开启事务
+		for i := 0; i < 20; i++ {
+			if grantLease == true {
+				_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithLease(leaseID))
+				if err != nil {
+					log.Printf("Failed to registe withlease: %v", err)
+					time.Sleep(100 * time.Millisecond)
+					continue
+				}
+			} else {
+				_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithIgnoreLease())
+				if err != nil {
+					log.Printf("Failed to registe withIgnoreLease: %v", err)
+					time.Sleep(100 * time.Millisecond)
+					continue
+				}
+			}
+
+			break
+		}
+	*/
 	// 租约保活机制
 	if grantLease {
 		go func() {
@@ -355,8 +370,9 @@ func main() {
 		}
 		break
 	}
-
-	defer lis.Close()
+	if lis != nil {
+		defer lis.Close()
+	}
 	if err != nil {
 		return
 	}
