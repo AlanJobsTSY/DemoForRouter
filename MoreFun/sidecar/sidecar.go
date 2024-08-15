@@ -135,7 +135,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		leaseID = leaseRes.ID
 	}
-	//time.Sleep(5 * time.Second)
+	time.Sleep(5 * time.Second)
 	// 创建一个kv客户端实现数据插入etcd
 	//kv := clientv3.NewKV(cli)
 
