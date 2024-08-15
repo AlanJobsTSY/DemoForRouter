@@ -135,6 +135,7 @@ func initGRPCClients() {
 		}(i)
 	}
 	wg.Wait()
+
 }
 
 func closeConnections() {

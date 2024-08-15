@@ -25,6 +25,7 @@ const (
 	MiniGameRouter_DiscoverService_FullMethodName = "/proto.MiniGameRouter/DiscoverService"
 	MiniGameRouter_SetCustomRoute_FullMethodName  = "/proto.MiniGameRouter/SetCustomRoute"
 	MiniGameRouter_SayHello_FullMethodName        = "/proto.MiniGameRouter/SayHello"
+	MiniGameRouter_CommitService_FullMethodName   = "/proto.MiniGameRouter/CommitService"
 )
 
 // MiniGameRouterClient is the client API for MiniGameRouter service.
@@ -40,6 +41,7 @@ type MiniGameRouterClient interface {
 	SetCustomRoute(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	// 简单的问候服务
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	CommitService(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
 }
 
 type miniGameRouterClient struct {
@@ -90,6 +92,16 @@ func (c *miniGameRouterClient) SayHello(ctx context.Context, in *HelloRequest, o
 	return out, nil
 }
 
+func (c *miniGameRouterClient) CommitService(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitResponse)
+	err := c.cc.Invoke(ctx, MiniGameRouter_CommitService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MiniGameRouterServer is the server API for MiniGameRouter service.
 // All implementations must embed UnimplementedMiniGameRouterServer
 // for forward compatibility.
@@ -103,6 +115,7 @@ type MiniGameRouterServer interface {
 	SetCustomRoute(context.Context, *SetRequest) (*SetResponse, error)
 	// 简单的问候服务
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
+	CommitService(context.Context, *CommitRequest) (*CommitResponse, error)
 	mustEmbedUnimplementedMiniGameRouterServer()
 }
 
@@ -124,6 +137,9 @@ func (UnimplementedMiniGameRouterServer) SetCustomRoute(context.Context, *SetReq
 }
 func (UnimplementedMiniGameRouterServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+}
+func (UnimplementedMiniGameRouterServer) CommitService(context.Context, *CommitRequest) (*CommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitService not implemented")
 }
 func (UnimplementedMiniGameRouterServer) mustEmbedUnimplementedMiniGameRouterServer() {}
 func (UnimplementedMiniGameRouterServer) testEmbeddedByValue()                        {}
@@ -218,6 +234,24 @@ func _MiniGameRouter_SayHello_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MiniGameRouter_CommitService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MiniGameRouterServer).CommitService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MiniGameRouter_CommitService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MiniGameRouterServer).CommitService(ctx, req.(*CommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MiniGameRouter_ServiceDesc is the grpc.ServiceDesc for MiniGameRouter service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,6 +274,10 @@ var MiniGameRouter_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SayHello",
 			Handler:    _MiniGameRouter_SayHello_Handler,
+		},
+		{
+			MethodName: "CommitService",
+			Handler:    _MiniGameRouter_CommitService_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

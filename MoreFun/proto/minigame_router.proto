@@ -15,8 +15,14 @@ service MiniGameRouter {
   rpc SetCustomRoute(SetRequest)returns(SetResponse);
   // 简单的问候服务
   rpc SayHello(HelloRequest) returns (HelloResponse);
+  rpc CommitService(CommitRequest)returns (CommitResponse);
 }
+message CommitRequest{
 
+}
+message CommitResponse{
+  string msg =1;
+}
 // 服务信息
 message Service {
   // 服务名称

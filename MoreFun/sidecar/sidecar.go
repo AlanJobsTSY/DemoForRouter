@@ -29,6 +29,10 @@ type MiniGameRouterServer struct {
 	pb.UnimplementedMiniGameRouterServer
 }
 
+var kvs map[string]string
+var kvb map[string]bool
+var kvl map[string]*clientv3.LeaseID
+
 // 缓存，用于存储服务发现状态
 var myIsDiscovered = &routerStrategy.IsDiscovered{
 	IsDiscovered: map[string]bool{},
@@ -105,17 +109,18 @@ func WatchDynamicRouter(key string) {
 }
 
 // 批量注册
+
 // 注册服务
 func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.RegisterServiceRequest) (*pb.RegisterServiceResponse, error) {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	var grantLease bool
 	var leaseID clientv3.LeaseID
-
-	serviceKey := fmt.Sprintf("%s_%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port)
-	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
 	var getRes *clientv3.GetResponse
 	var err error
+	serviceKey := fmt.Sprintf("%s_%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port)
+	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
+
 	// 查看当前的服务是否注册过
 	for i := 0; i < 20; i++ {
 		getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
@@ -126,7 +131,6 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		}
 		break
 	}
-
 	// 没有注册过则创建一个租约，同时将租约的ID赋值给leaseID
 	if getRes.Count == 0 {
 		grantLease = true
@@ -137,31 +141,12 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		leaseID = leaseRes.ID
 	}
 	time.Sleep(5 * time.Second)
-	// 创建一个kv客户端实现数据插入etcd
-	//kv := clientv3.NewKV(cli)
-	//test
-	kvs := make(map[string]string)
-	for i := 0; i < 2000; i++ {
-		kvs[serviceKey+strconv.Itoa(i)] = serviceValue
-	}
-	ops := make([]clientv3.Op, 0, len(kvs))
-	for k, v := range kvs {
-		ops = append(ops, clientv3.OpPut(k, v, clientv3.WithLease(leaseID)))
-		if len(ops) == 128 {
-			if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
-				log.Printf("批量失败提交")
-			}
-			ops = ops[:0] // 清空 ops 列表
-		}
-	}
-	if len(ops) > 0 {
-		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
-			log.Printf("批量失败提交")
-		}
-	}
-
+	kvs[serviceKey] = serviceValue
+	kvb[serviceKey] = grantLease
+	kvl[serviceKey] = &leaseID
 	/*
-		// 开启事务
+
+		// 创建一个kv客户端实现数据插入etcd
 		for i := 0; i < 20; i++ {
 			if grantLease == true {
 				_, err := cli.Put(context.Background(), serviceKey, serviceValue, clientv3.WithLease(leaseID))
@@ -181,6 +166,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 
 			break
 		}
+
 	*/
 	// 租约保活机制
 	if grantLease {
@@ -204,6 +190,41 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	return &pb.RegisterServiceResponse{
 		Msg: serviceKey + "注册成功",
 	}, nil
+}
+func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+	ops := make([]clientv3.Op, 0, len(kvs))
+	for k, v := range kvs {
+		var op clientv3.Op
+		if leaseID, ok := kvl[k]; ok && kvb[k] {
+			op = clientv3.OpPut(k, v, clientv3.WithLease(*leaseID))
+		} else {
+			op = clientv3.OpPut(k, v, clientv3.WithIgnoreLease())
+		}
+		ops = append(ops, op)
+		if len(ops) == 128 {
+			if _, err := cli.Txn(ctx).Then(ops...).Commit(); err != nil {
+				log.Printf("批量提交失败: %v", err)
+				return nil, err
+			}
+			ops = ops[:0] // 清空 ops 列表
+		}
+	}
+	if len(ops) > 0 {
+		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
+			log.Printf("批量失败提交")
+		}
+	}
+	// 清空全局变量
+	kvs = make(map[string]string)
+	kvb = make(map[string]bool)
+	kvl = make(map[string]*clientv3.LeaseID)
+
+	return &pb.CommitResponse{
+		Msg: "批量提交成功",
+	}, nil
+
 }
 
 // 打印svrWant类服务的列表供用户选择
