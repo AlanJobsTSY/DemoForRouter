@@ -32,22 +32,21 @@ var (
 )
 
 func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
-	log.Printf("here0??")
+	//log.Printf("here0??")
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
-	log.Printf("here1??")
+	//log.Printf("here1??")
 	mu.Lock()
 	defer mu.Unlock()
 	for k, v := range kvs {
 		var err error
 		if leaseID, ok := kvl[k]; ok && kvb[k] {
-			log.Printf("*leaseID %d", *leaseID)
+			//log.Printf("*leaseID %d", *leaseID)
 			_, err = cli.Put(ctx, k, v, clientv3.WithLease(*leaseID))
 		} else {
-			log.Printf("*reallY????")
+			//log.Printf("*reallY????")
 			_, err = cli.Put(ctx, k, v, clientv3.WithIgnoreLease())
 		}
-
 		if err != nil {
 			log.Printf("提交失败: %v", err)
 			continue
@@ -57,7 +56,6 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	kvs = make(map[string]string)
 	kvb = make(map[string]bool)
 	kvl = make(map[string]*clientv3.LeaseID)
-
 	return &pb.CommitResponse{
 		Msg: "批量提交成功",
 	}, nil
