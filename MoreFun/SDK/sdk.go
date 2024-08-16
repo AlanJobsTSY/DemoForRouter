@@ -51,7 +51,8 @@ func Init(endPoint *endPoint.EndPoint, portNS *int) (*pb.RegisterServiceResponse
 	// 连接 sidecar
 	conn, client, err := connectToSidecar(endPoint)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Printf("%v", err)
+		return nil, nil, nil
 	}
 
 	// 注册自己的服务

@@ -137,6 +137,9 @@ func initGRPCClients() bool {
 				Status:   status,
 			}
 			rRes, conn, client := SDK.Init(&endpoint, portNS)
+			if rRes == nil {
+				return
+			}
 			//defer conn.Close()
 			mu.Lock()
 			epSlice = append(epSlice, &endpoint)
