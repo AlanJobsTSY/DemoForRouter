@@ -5,94 +5,51 @@ import (
 	pb "MoreFun/proto"
 	"context"
 	"flag"
-	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"log"
-	"net"
 	"sync"
 	"time"
 )
 
-// MiniGameRouterServer 实现了 pb.UnimplementedMiniGameRouterServer 接口
-type MiniGameRouterServer struct {
-	pb.UnimplementedMiniGameRouterServer
-}
-
-// 定义命令行参数，用于指定 sidecar 的端口
 var (
-	ip   = flag.String("ip", "9.135.119.71", "The ns ip")
-	port = flag.Int("port", 50051, "The ns port")
-	kvs  map[string]string
-	kvb  map[string]bool
-	kvl  map[string]*clientv3.LeaseID
-	mu   sync.Mutex
+	kvSlice []kv
+	mu      sync.Mutex
 )
 
-func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
-	//log.Printf("here0??")
-	cli := etcd.NewEtcdCli()
-	defer cli.Close()
-	//log.Printf("here1??")
-	mu.Lock()
-	defer mu.Unlock()
-	for k, v := range kvs {
-		var err error
-		if leaseID, ok := kvl[k]; ok && kvb[k] {
-			//log.Printf("*leaseID %d", *leaseID)
-			_, err = cli.Put(ctx, k, v, clientv3.WithLease(*leaseID))
-		} else {
-			//log.Printf("*reallY????")
-			_, err = cli.Put(ctx, k, v, clientv3.WithIgnoreLease())
-		}
-		if err != nil {
-			log.Printf("提交失败: %v", err)
-			continue
-		}
-	}
-	// 清空全局变量
-	kvs = make(map[string]string)
-	kvb = make(map[string]bool)
-	kvl = make(map[string]*clientv3.LeaseID)
-	return &pb.CommitResponse{
-		Msg: "批量提交成功",
-	}, nil
+type kv struct {
+	k string
+	v string
+	b bool
+	l *clientv3.LeaseID
 }
 
 func main() {
-	kvs = make(map[string]string)
-	kvb = make(map[string]bool)
-	kvl = make(map[string]*clientv3.LeaseID)
 	flag.Parse()
-
-	// 启动Kafka消费者的协程
+	// 启动Kafka消费者
 	go startKafkaConsumer()
-
-	// 启动gRPC服务器
-	var lis net.Listener
-	var err error
-	for i := 0; i < 20; i++ {
-		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", *port))
-		if err != nil {
-			log.Printf("Failed to listen: %v", err)
-			time.Sleep(time.Second)
-			continue
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+	for {
+		for _, kvUnit := range kvSlice {
+			var err error
+			if kvUnit.b == true {
+				//log.Printf("*leaseID %d", *leaseID)
+				_, err = cli.Put(context.Background(), kvUnit.k, kvUnit.v, clientv3.WithLease(*kvUnit.l))
+			} else {
+				//log.Printf("*reallY????")
+				_, err = cli.Put(context.Background(), kvUnit.k, kvUnit.v, clientv3.WithIgnoreLease())
+			}
+			if err != nil {
+				log.Printf("提交失败: %v", err)
+				continue
+			}
+			mu.Lock()
+			kvSlice = make([]kv, 0)
+			mu.Unlock()
 		}
-		break
-	}
-	if lis != nil {
-		defer lis.Close()
-	}
-	if err != nil {
-		return
-	}
-	s := grpc.NewServer()
-	pb.RegisterMiniGameRouterServer(s, &MiniGameRouterServer{})
-	log.Printf("Sidecar is listening on port %d", *port)
-	if err := s.Serve(lis); err != nil {
-		log.Printf("Failed to serve: %v", err)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -121,10 +78,11 @@ func startKafkaConsumer() {
 			}
 			index += 1
 			log.Printf("[%d]: receive succss", index)
+			mu.Lock()
 			leaseID := clientv3.LeaseID(rRes.LeaseID)
-			kvs[rRes.SvrKey] = rRes.SvrValue
-			kvb[rRes.SvrKey] = rRes.IsLease
-			kvl[rRes.SvrKey] = &leaseID
+			kvNew := kv{rRes.SvrKey, rRes.SvrValue, rRes.IsLease, &leaseID}
+			kvSlice = append(kvSlice, kvNew)
+			mu.Unlock()
 		} else {
 			log.Printf("Consumer error: %v (%v)\n", err, msg)
 		}

@@ -7,10 +7,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/emirpasic/gods/maps/treemap"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
 	"os"
@@ -201,14 +203,42 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 				//fmt.Printf("leaseID:%x, ttl:%d\n", lease.ID, lease.TTL)
 			}
 		}()
+
 	}
 
-	return &pb.RegisterServiceResponse{
+	// 创建一个新的Kafka生产者实例，配置Kafka服务器地址
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	if err != nil {
+		log.Fatalf("Failed to create producer: %s", err)
+	}
+	defer p.Close() // 在函数结束时关闭生产者
+	msgR := &pb.RegisterServiceResponse{
 		SvrKey:   serviceKey,
 		SvrValue: serviceValue,
 		IsLease:  grantLease,
 		LeaseID:  int64(leaseID),
-	}, nil
+	}
+	topic := "myTopic" // 定义要发送消息的Kafka主题
+	msgBytes, err := proto.Marshal(msgR)
+	if err != nil {
+		log.Fatalf("Failed to marshal message: %s", err)
+	}
+	// 创建Kafka消息
+	msg := kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny}, // 设置消息的主题和分区
+		Value:          msgBytes,                                                           // 设置消息的内容
+	}
+	// 发送消息到Kafka
+	err = p.Produce(&msg, nil)
+	if err != nil {
+		log.Fatalf("Failed to produce message: %s", err)
+	}
+
+	// 等待消息传递完成，最多等待15秒
+	//p.Flush(30 * 1000)
+	//fmt.Println("Message sent successfully")
+
+	return msgR, nil
 }
 
 // 打印svrWant类服务的列表供用户选择

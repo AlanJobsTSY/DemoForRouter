@@ -7,6 +7,8 @@
     <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SDK/test.go" beforeDir="false" afterPath="$PROJECT_DIR$/SDK/test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sidecar/sidecar.go" beforeDir="false" afterPath="$PROJECT_DIR$/sidecar/sidecar.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd0.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd0.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd1.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd1.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../etcd-config/etcd2.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../etcd-config/etcd2.yaml" afterDir="false" />
