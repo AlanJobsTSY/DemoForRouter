@@ -32,6 +32,7 @@ var (
 )
 
 func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.CommitRequest) (*pb.CommitResponse, error) {
+	log.Printf("here0??")
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	log.Printf("here1??")

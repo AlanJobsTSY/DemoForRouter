@@ -110,31 +110,32 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	defer cli.Close()
 	var grantLease bool
 	var leaseID clientv3.LeaseID
-	var getRes *clientv3.GetResponse
-	var err error
+	//var getRes *clientv3.GetResponse
+	//var err error
 	serviceKey := fmt.Sprintf("%s_%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port)
 	serviceValue := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s", req.Service.Name, req.Service.Ip, req.Service.Port, req.Service.Protocol, req.Service.Weight, req.Service.Status, req.Service.ConnNum)
 
 	// 查看当前的服务是否注册过
-	for i := 0; i < 20; i++ {
-		getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
-		if err != nil {
-			log.Printf("Failed to get service key: %v", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		break
-	}
+	/*
+		for i := 0; i < 20; i++ {
+			getRes, err = cli.Get(ctx, serviceKey, clientv3.WithCountOnly())
+			if err != nil {
+				log.Printf("Failed to get service key: %v", err)
+				time.Sleep(time.Second)
+				continue
+			}
+			break
+		}*/
 	// 没有注册过则创建一个租约，同时将租约的ID赋值给leaseID
-	if getRes.Count == 0 {
-		grantLease = true
-		leaseRes, err := cli.Grant(ctx, 10)
-		if err != nil {
-			log.Fatalf("Failed to grant lease: %v", err)
-		}
-		time.Sleep(5 * time.Second)
-		leaseID = leaseRes.ID
+	//if getRes.Count == 0 {
+	grantLease = true
+	leaseRes, err := cli.Grant(ctx, 10)
+	if err != nil {
+		log.Fatalf("Failed to grant lease: %v", err)
 	}
+	time.Sleep(5 * time.Second)
+	leaseID = leaseRes.ID
+	//}
 	/*
 		//log.Printf("%s", req.NsIp)
 		conn, err := grpc.Dial(req.NsIp, grpc.WithTransportCredentials(insecure.NewCredentials()))
