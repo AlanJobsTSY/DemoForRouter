@@ -127,4 +127,5 @@ func main() {
 	}
 
 	SDK.Input(&endpoint, client)
+	log.Printf("server exit")
 }
