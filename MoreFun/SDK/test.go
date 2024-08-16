@@ -66,6 +66,7 @@ func HandleUserInput(epSlice []*endPoint.EndPoint, clientSlice []*pb.MiniGameRou
 		default:
 			fmt.Println("Invalid choice")
 		}
+		break
 	}
 }
 

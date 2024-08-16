@@ -15,6 +15,8 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
+	"runtime/pprof"
 	"sync"
 	"time"
 )
@@ -174,7 +176,7 @@ func initGRPCClients() bool {
 	defer conn.Close()
 	c := pb.NewMiniGameRouterClient(conn)
 	for i := 0; i < 20; i++ {
-		log.Printf("tsytsytsy")
+		//log.Printf("tsytsytsy")
 		_, err = c.CommitService(context.Background(), &pb.CommitRequest{})
 		if err != nil {
 			log.Printf("commit err,retry")
@@ -197,6 +199,20 @@ func closeConnections() {
 	}
 }
 func main() {
+	//test
+	// 创建 CPU 分析文件
+	f, err := os.Create("cpu.pprof")
+	if err != nil {
+		log.Fatal("could not create CPU profile: ", err)
+	}
+	defer f.Close()
+
+	// 开始 CPU 分析
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal("could not start CPU profile: ", err)
+	}
+	defer pprof.StopCPUProfile()
+
 	flag.Parse()
 	numServers = *num
 	epSlice = make([]*endPoint.EndPoint, 0, numServers)
