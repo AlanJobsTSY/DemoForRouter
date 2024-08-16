@@ -42,11 +42,13 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	for k, v := range kvs {
 		var op clientv3.Op
 		if leaseID, ok := kvl[k]; ok && kvb[k] {
+			log.Printf("*leaseID %d", *leaseID)
 			op = clientv3.OpPut(k, v, clientv3.WithLease(*leaseID))
 		} else {
+			log.Printf("*reallY????")
 			op = clientv3.OpPut(k, v, clientv3.WithIgnoreLease())
 		}
-		log.Printf("*leaseID")
+
 		ops = append(ops, op)
 		if len(ops) == 128 {
 			for i := 1; i < 20; i++ {
