@@ -125,10 +125,6 @@ func main() {
 	if rRes == nil {
 		return
 	}
-	for {
-		//log.Printf("1")
-		time.Sleep(60 * time.Second)
-	}
 	//SDK.Input(&endpoint, client)
 	log.Printf("server exit")
 }
