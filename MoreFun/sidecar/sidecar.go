@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
+	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -368,9 +370,22 @@ func (s *MiniGameRouterServer) SayHello(ctx context.Context, req *pb.HelloReques
 
 // 主函数，启动 gRPC 服务器
 func main() {
+	//test
+	// 创建 CPU 分析文件
+	f, err := os.Create("sidecar.pprof")
+	if err != nil {
+		log.Fatal("could not create CPU profile: ", err)
+	}
+	defer f.Close()
+
+	// 开始 CPU 分析
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal("could not start CPU profile: ", err)
+	}
+	defer pprof.StopCPUProfile()
+
 	flag.Parse()
 	var lis net.Listener
-	var err error
 	for i := 0; i < 20; i++ {
 		lis, err = net.Listen("tcp", fmt.Sprintf(":%d", *port))
 		if err != nil {

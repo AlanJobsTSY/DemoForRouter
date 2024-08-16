@@ -201,7 +201,7 @@ func closeConnections() {
 func main() {
 	//test
 	// 创建 CPU 分析文件
-	f, err := os.Create("cpu.pprof")
+	f, err := os.Create("server.pprof")
 	if err != nil {
 		log.Fatal("could not create CPU profile: ", err)
 	}
