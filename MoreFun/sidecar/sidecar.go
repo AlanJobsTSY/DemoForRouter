@@ -132,6 +132,7 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 		if err != nil {
 			log.Fatalf("Failed to grant lease: %v", err)
 		}
+		time.Sleep(5 * time.Second)
 		leaseID = leaseRes.ID
 	}
 	/*

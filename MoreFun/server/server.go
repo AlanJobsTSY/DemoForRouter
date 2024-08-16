@@ -98,7 +98,7 @@ func isListen(port int) (flag bool) {
 
 	return true
 }
-func initGRPCClients() {
+func initGRPCClients() bool {
 	// 创建一个新的Kafka生产者实例，配置Kafka服务器地址
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {
@@ -182,8 +182,10 @@ func initGRPCClients() {
 	}
 	if err != nil {
 		log.Printf("commit err")
+		return false
 	}
 	log.Printf("commit success")
+	return true
 }
 
 func closeConnections() {
@@ -196,7 +198,10 @@ func main() {
 	numServers = *num
 	epSlice = make([]*endPoint.EndPoint, 0, numServers)
 	clientSlice = make([]*pb.MiniGameRouterClient, 0, numServers)
-	initGRPCClients()
+	isInit := initGRPCClients()
 	defer closeConnections()
+	if isInit == false {
+		return
+	}
 	SDK.HandleUserInput(epSlice, clientSlice)
 }
