@@ -62,10 +62,7 @@ message RegisterServiceRequest {
 // 注册服务响应
 message RegisterServiceResponse {
   // 响应消息
-  string svrKey =1;
-  string svrValue=2;
-  bool  isLease=3;
-  int64 leaseID=4;
+  string msg =1;
 }
 
 // 发现服务请求
