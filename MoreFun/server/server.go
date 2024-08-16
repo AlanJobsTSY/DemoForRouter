@@ -120,12 +120,15 @@ func main() {
 		Weight:   weight,
 		Status:   status,
 	}
-	rRes, conn, client := SDK.Init(&endpoint)
+	rRes, conn, _ := SDK.Init(&endpoint)
 	defer conn.Close()
 	if rRes == nil {
 		return
 	}
-
-	SDK.Input(&endpoint, client)
+	for {
+		log.Printf("1")
+		time.Sleep(5 * time.Second)
+	}
+	//SDK.Input(&endpoint, client)
 	log.Printf("server exit")
 }
