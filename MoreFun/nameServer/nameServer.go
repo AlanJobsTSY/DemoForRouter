@@ -46,6 +46,7 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 		} else {
 			op = clientv3.OpPut(k, v, clientv3.WithIgnoreLease())
 		}
+		log.Printf("*leaseID")
 		ops = append(ops, op)
 		if len(ops) == 128 {
 			for i := 1; i < 20; i++ {
