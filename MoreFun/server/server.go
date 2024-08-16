@@ -23,7 +23,7 @@ var (
 	protocol = flag.String("protocol", "grpc", "The server protocol")
 	weight   = flag.Int("weight", 1, "The server weight")
 	status   = flag.String("status", "0", "The server status")
-	//portNS   = flag.Int("portNS", 50050, "The server port")
+	test     = flag.Bool("test", true, "The server version")
 )
 
 // MiniGameRouterServer 实现了 MiniGameRouter gRPC 服务
@@ -120,15 +120,17 @@ func main() {
 		Weight:   weight,
 		Status:   status,
 	}
-	rRes, conn, _ := SDK.Init(&endpoint)
+	rRes, conn, client := SDK.Init(&endpoint)
 	defer conn.Close()
 	if rRes == nil {
 		return
 	}
-	for {
-		//log.Printf("1")
-		time.Sleep(60 * time.Second)
+	if *test == true {
+		for {
+			//log.Printf("1")
+			time.Sleep(60 * time.Second)
+		}
 	}
-	//SDK.Input(&endpoint, client)
+	SDK.Input(&endpoint, client)
 	log.Printf("server exit")
 }
