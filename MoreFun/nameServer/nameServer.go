@@ -35,6 +35,7 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	mu.Lock()
+	defer mu.Unlock()
 	ops := make([]clientv3.Op, 0, len(kvs))
 	for k, v := range kvs {
 		var op clientv3.Op
@@ -45,11 +46,13 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 		}
 		ops = append(ops, op)
 		if len(ops) == 128 {
-			if _, err := cli.Txn(ctx).Then(ops...).Commit(); err != nil {
-				log.Printf("批量提交失败: %v", err)
-				return nil, err
+			for i := 1; i < 20; i++ {
+				if _, err := cli.Txn(ctx).Then(ops...).Commit(); err != nil {
+					log.Printf("批量提交失败: %v", err)
+					continue
+				}
+				ops = ops[:0] // 清空 ops 列表
 			}
-			ops = ops[:0] // 清空 ops 列表
 		}
 	}
 	if len(ops) > 0 {
@@ -62,7 +65,7 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	kvs = make(map[string]string)
 	kvb = make(map[string]bool)
 	kvl = make(map[string]*clientv3.LeaseID)
-	mu.Unlock()
+
 	return &pb.CommitResponse{
 		Msg: "批量提交成功",
 	}, nil
