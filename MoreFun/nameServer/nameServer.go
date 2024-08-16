@@ -38,32 +38,19 @@ func (s *MiniGameRouterServer) CommitService(ctx context.Context, req *pb.Commit
 	log.Printf("here1??")
 	mu.Lock()
 	defer mu.Unlock()
-	ops := make([]clientv3.Op, 0, len(kvs))
 	for k, v := range kvs {
-		var op clientv3.Op
+		var err error
 		if leaseID, ok := kvl[k]; ok && kvb[k] {
 			log.Printf("*leaseID %d", *leaseID)
-			op = clientv3.OpPut(k, v, clientv3.WithLease(*leaseID))
+			_, err = cli.Put(ctx, k, v, clientv3.WithLease(*leaseID))
 		} else {
 			log.Printf("*reallY????")
-			op = clientv3.OpPut(k, v, clientv3.WithIgnoreLease())
+			_, err = cli.Put(ctx, k, v, clientv3.WithIgnoreLease())
 		}
 
-		ops = append(ops, op)
-		if len(ops) == 128 {
-			for i := 1; i < 20; i++ {
-				if _, err := cli.Txn(ctx).Then(ops...).Commit(); err != nil {
-					log.Printf("批量提交失败: %v", err)
-					continue
-				}
-				ops = ops[:0] // 清空 ops 列表
-			}
-		}
-	}
-	if len(ops) > 0 {
-		if _, err := cli.Txn(context.Background()).Then(ops...).Commit(); err != nil {
-			log.Printf("批量失败提交")
-			return nil, err
+		if err != nil {
+			log.Printf("提交失败: %v", err)
+			continue
 		}
 	}
 	// 清空全局变量
