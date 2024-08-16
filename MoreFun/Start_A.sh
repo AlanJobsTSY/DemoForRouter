@@ -12,7 +12,7 @@ num_executions=1
 # 服务器的其他参数
 name="A"
 ip="9.135.119.71"
-weight=5
+weight="5"
 
 for ((i=1; i<=num_executions; i++))
 do
