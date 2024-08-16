@@ -46,6 +46,7 @@ func HandleUserInput(epSlice []*endPoint.EndPoint, clientSlice []*pb.MiniGameRou
 		fmt.Println("3. All services send to a specific target route, each sends multiple times")
 		fmt.Println("4. A specific service sends to a specific target route, sends multiple times")
 		fmt.Println("5. A specific service registers multiple dynamic values")
+		fmt.Println("821. exit all")
 		fmt.Print("Enter your choice: ")
 		scanner.Scan()
 		choice := scanner.Text()
@@ -62,7 +63,10 @@ func HandleUserInput(epSlice []*endPoint.EndPoint, clientSlice []*pb.MiniGameRou
 		case "4":
 			testSpecificServiceToRoute(epSlice, clientSlice)
 		case "5":
-			//testRegisterMultipleValues(epSlice, clientSlice)
+		//testRegisterMultipleValues(epSlice, clientSlice)
+		case "821":
+			return
+
 		default:
 			fmt.Println("Invalid choice")
 		}
