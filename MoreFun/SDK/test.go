@@ -62,7 +62,7 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 		fmt.Println("Invalid number")
 		return
 	}
-	limiter := rate.NewLimiter(4000, 4000)
+	limiter := rate.NewLimiter(500, 500)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	// 记录开始时间
@@ -92,6 +92,9 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 }
 
 func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
+	var svrDiscoverTimeTotal int64
+	var returnTimeTotal int64
+
 	fmt.Print("Enter the type of service or dynamicKey: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -106,6 +109,7 @@ func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	}
 	limiter := rate.NewLimiter(500, 500)
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	// 记录开始时间
 	startTime := time.Now()
 	for i := 0; i < times; i++ {
@@ -119,11 +123,17 @@ func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 				return
 			}
 			log.Printf("Recv msg: %s", helloRes.Msg)
+			mu.Lock()
+			svrDiscoverTimeTotal += helloRes.SvrDiscoverTime
+			returnTimeTotal += helloRes.ReturnTime
+			mu.Unlock()
 		}()
 	}
 	wg.Wait()
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
+	endTime := time.Now()
+	fmt.Printf("svrDiscoverTimeTotal taken: %v ms\n", svrDiscoverTimeTotal)
+	fmt.Printf("returnTimeTotal taken: %v ms\n", returnTimeTotal)
+	fmt.Printf("Total time taken: %v ms\n", endTime.Sub(startTime).Milliseconds())
 }
 
 func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
