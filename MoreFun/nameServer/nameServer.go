@@ -32,6 +32,7 @@ func main() {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	for {
+		mu.Lock()
 		for _, kvUnit := range kvSlice {
 			var err error
 			if kvUnit.b == true {
@@ -45,12 +46,13 @@ func main() {
 				log.Printf("提交失败: %v", err)
 				continue
 			}
-			mu.Lock()
+
 			kvSlice = make([]kv, 0)
-			mu.Unlock()
 		}
+		mu.Unlock()
 		time.Sleep(5 * time.Second)
 	}
+
 }
 
 func startKafkaConsumer() {

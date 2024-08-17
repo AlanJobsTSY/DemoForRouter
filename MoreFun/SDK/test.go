@@ -168,6 +168,7 @@ func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.
 			rsp, err := setCustomRoute(*client, dynamicKey+"_"+i, dynamicValue, strconv.Itoa(timeout))
 			if err != nil {
 				log.Printf("Error: %v", err)
+				return
 			}
 			log.Printf("Recv msg: %s", rsp.Msg)
 		}(strconv.Itoa(i))
