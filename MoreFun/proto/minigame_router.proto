@@ -84,6 +84,10 @@ message DiscoverServiceRequest {
 message DiscoverServiceResponse {
   // 响应消息
   string msg = 1;
+  // 执行时间（以毫秒为单位）
+  int64 svrDiscoverTime = 2;
+  int64 dialTime = 3;
+  int64 returnTime = 4;
 }
 
 // 问候请求

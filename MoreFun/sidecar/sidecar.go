@@ -339,6 +339,9 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	var addr string
+	var svrDiscoverTime int64
+	var startTime time.Time
+	var endTime time.Time
 	if req.FixedRouterAddr == "" {
 		// 拉取动态键值
 		if _, ok := myServicesStorage.DynamicRouter[req.ToMsg]; !ok {
@@ -367,8 +370,14 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			if !ok {
 				return nil, fmt.Errorf("no configuration found for service %s", req.ToMsg)
 			}
+			// 记录开始时间
+			startTime = time.Now()
 			//路由选择
 			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
+			// 记录结束时间
+			endTime = time.Now()
+			// 计算执行时间（以毫秒为单位）
+			svrDiscoverTime = endTime.Sub(startTime).Milliseconds()
 		}
 	} else { // 指定目标路由
 		// 如果服务未被发现过，则进行服务发现
@@ -385,6 +394,7 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 		conn.Close()
 	}
 	// 连接另外一个 sidecar
+	startTime = time.Now()
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to connect to another sidecar: %s", err)
@@ -394,13 +404,22 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	helloReq := &pb.HelloRequest{
 		Msg: req.FromMsg,
 	}
+	endTime = time.Now()
+	dialTime := endTime.Sub(startTime).Milliseconds()
+
 	// 让另一个sidecar调用自己负责的服务
+	startTime = time.Now()
 	helloRes, err := c.SayHello(ctx, helloReq)
+	endTime = time.Now()
+	returnTime := endTime.Sub(startTime).Milliseconds()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to grpc another sidecar: %s", err)
 	}
 	return &pb.DiscoverServiceResponse{
-		Msg: helloRes.Msg,
+		Msg:             helloRes.Msg,
+		SvrDiscoverTime: svrDiscoverTime,
+		DialTime:        dialTime,
+		ReturnTime:      returnTime,
 	}, nil
 }
 

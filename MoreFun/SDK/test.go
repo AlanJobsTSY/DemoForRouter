@@ -14,28 +14,6 @@ import (
 	"time"
 )
 
-func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
-	// 请求别人的服务
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter the name of the service you need and the 'ip:port' for the service if your know it (or press Ctrl+C to exit):")
-	for scanner.Scan() {
-		if scanner.Text() == "exit" {
-			return
-		}
-		if scanner.Text() == "" {
-			continue
-		}
-		if scanner.Text() == "set" {
-			setCustomRouteInput(client)
-			continue
-		}
-		grpcDiscover(endPoint, client, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from stdin: %v", err)
-	}
-}
-
 func HandleUserInput(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -67,6 +45,10 @@ func HandleUserInput(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClien
 }
 
 func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
+	var svrDiscoverTimeTotal int64
+	var dialTimeTotal int64
+	var returnTimeTotal int64
+
 	fmt.Print("Enter the type of service: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -83,6 +65,7 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	}
 	limiter := rate.NewLimiter(500, 500)
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	// 记录开始时间
 	startTime := time.Now()
 	for i := 0; i < times; i++ {
@@ -96,10 +79,18 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 				return
 			}
 			log.Printf("Recv msg: %s", helloRes.Msg)
+			mu.Lock()
+			svrDiscoverTimeTotal += helloRes.SvrDiscoverTime
+			dialTimeTotal += helloRes.DialTime
+			returnTimeTotal += helloRes.ReturnTime
+			mu.Unlock()
 		}()
 	}
 	wg.Wait()
 	elapsedTime := time.Since(startTime)
+	fmt.Printf("svrDiscoverTimeTotal taken: %v ms\n", svrDiscoverTimeTotal)
+	fmt.Printf("dialTimeTotal taken: %v ms\n", dialTimeTotal)
+	fmt.Printf("returnTimeTotal taken: %v ms\n", returnTimeTotal)
 	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
 }
 
@@ -176,4 +167,26 @@ func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.
 	wg.Wait()
 	elapsedTime := time.Since(startTime)
 	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
+}
+
+func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
+	// 请求别人的服务
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Enter the name of the service you need and the 'ip:port' for the service if your know it (or press Ctrl+C to exit):")
+	for scanner.Scan() {
+		if scanner.Text() == "exit" {
+			return
+		}
+		if scanner.Text() == "" {
+			continue
+		}
+		if scanner.Text() == "set" {
+			setCustomRouteInput(client)
+			continue
+		}
+		grpcDiscover(endPoint, client, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading from stdin: %v", err)
+	}
 }
