@@ -121,7 +121,9 @@ func main() {
 		Status:   status,
 	}
 	rRes, conn, client := SDK.Init(&endpoint)
-	defer conn.Close()
+	if conn != nil {
+		defer conn.Close()
+	}
 	if rRes == nil {
 		return
 	}

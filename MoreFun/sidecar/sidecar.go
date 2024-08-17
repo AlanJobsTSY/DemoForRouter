@@ -235,8 +235,8 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	}
 
 	// 等待消息传递完成，最多等待15秒
-	p.Flush(15 * 1000)
-	fmt.Println("Message sent successfully")
+	p.Flush(10 * 1000)
+	//fmt.Println("Message sent successfully")
 
 	return msgR, nil
 }
@@ -282,7 +282,7 @@ func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRe
 	}
 
 	// 等待消息传递完成，最多等待15秒
-	p.Flush(15 * 1000)
+	p.Flush(10 * 1000)
 
 	return &pb.SetResponse{
 		Msg: fmt.Sprintf("%s_%s sent successfully", req.Key, req.Value),
