@@ -241,6 +241,54 @@ func (s *MiniGameRouterServer) RegisterService(ctx context.Context, req *pb.Regi
 	return msgR, nil
 }
 
+// 设置动态键值
+func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
+	cli := etcd.NewEtcdCli()
+	defer cli.Close()
+
+	var leaseID clientv3.LeaseID
+	timeInt, _ := strconv.Atoi(req.Timeout)
+	leaseRes, err := cli.Grant(ctx, int64(timeInt))
+	if err != nil {
+		log.Fatalf("Failed to grant lease: %v", err)
+	}
+	leaseID = leaseRes.ID
+
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	if err != nil {
+		log.Fatalf("Failed to create producer: %s", err)
+	}
+	defer p.Close() // 在函数结束时关闭生产者
+	msgR := &pb.RegisterServiceResponse{
+		SvrKey:   req.Key,
+		SvrValue: req.Value,
+		IsLease:  true,
+		LeaseID:  int64(leaseID),
+	}
+	topic := "myTopic" // 定义要发送消息的Kafka主题
+	msgBytes, err := proto.Marshal(msgR)
+	if err != nil {
+		log.Fatalf("Failed to marshal message: %s", err)
+	}
+	// 创建Kafka消息
+	msg := kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny}, // 设置消息的主题和分区
+		Value:          msgBytes,                                                           // 设置消息的内容
+	}
+	// 发送消息到Kafka
+	err = p.Produce(&msg, nil)
+	if err != nil {
+		log.Fatalf("Failed to produce message: %s", err)
+	}
+
+	// 等待消息传递完成，最多等待15秒
+	p.Flush(15 * 1000)
+
+	return &pb.SetResponse{
+		Msg: fmt.Sprintf("%s_%s sent successfully", req.Key, req.Value),
+	}, nil
+}
+
 // 打印svrWant类服务的列表供用户选择
 func printWant(svrWant string) {
 	var index int = 0
@@ -353,26 +401,6 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	}
 	return &pb.DiscoverServiceResponse{
 		Msg: helloRes.Msg,
-	}, nil
-}
-
-// 设置动态键值
-func (s *MiniGameRouterServer) SetCustomRoute(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
-	cli := etcd.NewEtcdCli()
-	defer cli.Close()
-	var leaseID clientv3.LeaseID
-	timeInt, _ := strconv.Atoi(req.Timeout)
-	leaseRes, err := cli.Grant(ctx, int64(timeInt))
-	if err != nil {
-		log.Fatalf("Failed to grant lease: %v", err)
-	}
-	leaseID = leaseRes.ID
-	_, err = cli.Put(ctx, req.Key, req.Value, clientv3.WithLease(leaseID))
-	if err != nil {
-		return nil, fmt.Errorf("Fail SetCustomRoute")
-	}
-	return &pb.SetResponse{
-		Msg: fmt.Sprintf("%s_%s set success", req.Key, req.Value),
 	}, nil
 }
 
