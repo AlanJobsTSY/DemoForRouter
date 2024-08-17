@@ -129,7 +129,8 @@ func grpcDiscover(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient, s
 	}
 	log.Printf("Recv msg: %s", helloRes.Msg)
 }
-func setCustomRoute(client pb.MiniGameRouterClient) {
+
+func setCustomRouteInput(client pb.MiniGameRouterClient) {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	parts := strings.Fields(scanner.Text())
@@ -144,14 +145,17 @@ func setCustomRoute(client pb.MiniGameRouterClient) {
 		return
 	}
 	routerAddr := fmt.Sprintf("%s:%d", partsRouterAddr[0], portInt+1)
-	req := &pb.SetRequest{
-		Key:     parts[0],
-		Value:   routerAddr,
-		Timeout: parts[2],
-	}
-	rsp, err := client.SetCustomRoute(context.Background(), req)
+	rsp, err := setCustomRoute(client, parts[0], routerAddr, parts[2])
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
 	log.Printf(rsp.Msg)
+}
+func setCustomRoute(client pb.MiniGameRouterClient, dKey string, dValue string, dTimeOut string) (*pb.SetResponse, error) {
+	req := &pb.SetRequest{
+		Key:     dKey,
+		Value:   dValue,
+		Timeout: dTimeOut,
+	}
+	return client.SetCustomRoute(context.Background(), req)
 }

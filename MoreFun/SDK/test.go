@@ -26,7 +26,7 @@ func Input(endPoint *endPoint.EndPoint, client pb.MiniGameRouterClient) {
 			continue
 		}
 		if scanner.Text() == "set" {
-			setCustomRoute(client)
+			setCustomRouteInput(client)
 			continue
 		}
 		grpcDiscover(endPoint, client, scanner.Text())
@@ -55,7 +55,7 @@ func HandleUserInput(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClien
 		case "2":
 			testOtherTypeRouting(endPoint, client)
 		case "3":
-			testRegisteDynamicKeyValueRouting(endPoint, client)
+			testRegisterDynamicKeyValueRouting(endPoint, client)
 		case "4":
 			testOtherTypeRouting(endPoint, client)
 		case "5":
@@ -104,7 +104,7 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 }
 
 func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
-	fmt.Print("Enter the type of service: ")
+	fmt.Print("Enter the type of service or dynamicKey: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	serviceType := scanner.Text()
@@ -138,7 +138,41 @@ func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
 }
 
-func testRegisteDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
-	fmt.Println("Running Batch Set Dynamic Key-Value Routing Test...")
-	// 在这里添加具体的测试逻辑
+func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
+	fmt.Print("Enter the dynamicKey: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	dynamicKey := scanner.Text()
+	fmt.Print("Enter the dynamicValue: ")
+	scanner.Scan()
+	dynamicValue := scanner.Text()
+	fmt.Print("Enter the timeout: ")
+	scanner.Scan()
+	timeout, err := strconv.Atoi(scanner.Text())
+	fmt.Print("Enter the number of times to set: ")
+	scanner.Scan()
+	times, err := strconv.Atoi(scanner.Text())
+	if err != nil {
+		fmt.Println("Invalid number")
+		return
+	}
+	limiter := rate.NewLimiter(500, 500)
+	var wg sync.WaitGroup
+	// 记录开始时间
+	startTime := time.Now()
+	for i := 0; i < times; i++ {
+		limiter.Wait(context.Background())
+		wg.Add(1)
+		go func(i string) {
+			defer wg.Done()
+			rsp, err := setCustomRoute(*client, dynamicKey+"_"+i, dynamicValue, strconv.Itoa(timeout))
+			if err != nil {
+				log.Printf("Error: %v", err)
+			}
+			log.Printf("Recv msg: %s", rsp.Msg)
+		}(strconv.Itoa(i))
+	}
+	wg.Wait()
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("Total time taken: %v ms\n", elapsedTime.Milliseconds())
 }
