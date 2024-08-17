@@ -32,7 +32,6 @@ func main() {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
 	for {
-		log.Printf("this is ns")
 		for _, kvUnit := range kvSlice {
 			var err error
 			if kvUnit.b == true {

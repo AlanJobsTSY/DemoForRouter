@@ -131,6 +131,6 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	}
-	SDK.Input(&endpoint, client)
+	SDK.HandleUserInput(&endpoint, &client)
 	log.Printf("server exit")
 }

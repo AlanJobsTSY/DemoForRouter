@@ -4,14 +4,14 @@
 executable="go run ./server/server.go"
 
 # 初始参数
-initial_port=40000
+initial_port=35000
 
 # 执行次数
-num_executions=100
+num_executions=200
 
 # 服务器的其他参数
 name="B"
-ip="9.135.119.71"
+ip=$(hostname -I | awk '{print $1}')
 weight=5
 
 for ((i=1; i<=num_executions; i++))

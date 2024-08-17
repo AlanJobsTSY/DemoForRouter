@@ -10,7 +10,7 @@ initial_port=30000
 num_executions=200
 
 # 服务器的其他参数
-name="A"
+name="D"
 ip=$(hostname -I | awk '{print $1}')
 weight=5
 
