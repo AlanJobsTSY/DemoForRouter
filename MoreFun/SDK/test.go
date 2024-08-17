@@ -46,7 +46,6 @@ func HandleUserInput(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClien
 
 func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouterClient) {
 	var svrDiscoverTimeTotal int64
-	var dialTimeTotal int64
 	var returnTimeTotal int64
 
 	fmt.Print("Enter the type of service: ")
@@ -81,7 +80,6 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 			log.Printf("Recv msg: %s", helloRes.Msg)
 			mu.Lock()
 			svrDiscoverTimeTotal += helloRes.SvrDiscoverTime
-			dialTimeTotal += helloRes.DialTime
 			returnTimeTotal += helloRes.ReturnTime
 			mu.Unlock()
 		}()
@@ -89,7 +87,6 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	wg.Wait()
 	endTime := time.Now()
 	fmt.Printf("svrDiscoverTimeTotal taken: %v ms\n", svrDiscoverTimeTotal)
-	fmt.Printf("dialTimeTotal taken: %v ms\n", dialTimeTotal)
 	fmt.Printf("returnTimeTotal taken: %v ms\n", returnTimeTotal)
 	fmt.Printf("Total time taken: %v ms\n", endTime.Sub(startTime).Milliseconds())
 }

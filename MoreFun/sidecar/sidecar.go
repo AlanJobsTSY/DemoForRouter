@@ -404,11 +404,8 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	helloReq := &pb.HelloRequest{
 		Msg: req.FromMsg,
 	}
-	endTime = time.Now()
-	dialTime := endTime.Sub(startTime).Milliseconds()
 
 	// 让另一个sidecar调用自己负责的服务
-	startTime = time.Now()
 	helloRes, err := c.SayHello(ctx, helloReq)
 	endTime = time.Now()
 	returnTime := endTime.Sub(startTime).Milliseconds()
@@ -418,7 +415,6 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 	return &pb.DiscoverServiceResponse{
 		Msg:             helloRes.Msg,
 		SvrDiscoverTime: svrDiscoverTime,
-		DialTime:        dialTime,
 		ReturnTime:      returnTime,
 	}, nil
 }
