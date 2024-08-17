@@ -62,7 +62,7 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 		fmt.Println("Invalid number")
 		return
 	}
-	limiter := rate.NewLimiter(500, 500)
+	limiter := rate.NewLimiter(1000, 1000)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	// 记录开始时间
