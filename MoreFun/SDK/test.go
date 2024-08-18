@@ -181,7 +181,7 @@ func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.
 		fmt.Println("Invalid number")
 		return
 	}
-	limiter := rate.NewLimiter(200, 200)
+	limiter := rate.NewLimiter(150, 150)
 	var wg sync.WaitGroup
 	// 记录开始时间
 	startTime := time.Now()
