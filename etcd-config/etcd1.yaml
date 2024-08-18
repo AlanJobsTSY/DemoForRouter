@@ -12,3 +12,4 @@ logger: "zap"
 log-level: "warn"
 log-outputs:
   - "stderr"
+quota-backend-bytes: 1073741824  # 8 GB
