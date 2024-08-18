@@ -376,8 +376,8 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
 			// 记录结束时间
 			endTime = time.Now()
-			// 计算执行时间（以毫秒为单位）
-			svrDiscoverTime = endTime.Sub(startTime).Milliseconds()
+			// 计算执行时间（以μ秒为单位）
+			svrDiscoverTime = endTime.Sub(startTime).Microseconds()
 		}
 	} else { // 指定目标路由
 		// 如果服务未被发现过，则进行服务发现

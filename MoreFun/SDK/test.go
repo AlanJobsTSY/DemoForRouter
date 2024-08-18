@@ -100,7 +100,7 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	}
 	wg.Wait()
 	endTime := time.Now()
-	fmt.Printf("svrDiscoverTimeTotal taken: %v ms\n", svrDiscoverTimeTotal)
+	fmt.Printf("svrDiscoverTimeTotal taken: %v μs\n", svrDiscoverTimeTotal)
 	fmt.Printf("returnTimeTotal taken: %v ms\n", returnTimeTotal)
 	fmt.Printf("Total time taken: %v ms\n", endTime.Sub(startTime).Milliseconds())
 }
@@ -145,7 +145,7 @@ func testOtherTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	}
 	wg.Wait()
 	endTime := time.Now()
-	fmt.Printf("svrDiscoverTimeTotal taken: %v ms\n", svrDiscoverTimeTotal)
+	fmt.Printf("svrDiscoverTimeTotal taken: %v μs\n", svrDiscoverTimeTotal)
 	fmt.Printf("returnTimeTotal taken: %v ms\n", returnTimeTotal)
 	fmt.Printf("Total time taken: %v ms\n", endTime.Sub(startTime).Milliseconds())
 }
