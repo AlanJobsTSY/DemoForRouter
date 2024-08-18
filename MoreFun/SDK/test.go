@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -55,6 +56,19 @@ func testFixedTypeRouting(endPoint *endPoint.EndPoint, client *pb.MiniGameRouter
 	fmt.Print("Enter the target route: ")
 	scanner.Scan()
 	targetRoute := scanner.Text()
+
+	partsRouterAddr := strings.Split(targetRoute, ":")
+	if len(partsRouterAddr) != 2 {
+		log.Printf("Wrong fomat for 'ip:port'")
+		return
+	}
+	portInt, err := strconv.Atoi(partsRouterAddr[1])
+	if err != nil {
+		log.Printf("Wrong port")
+		return
+	}
+	targetRoute = fmt.Sprintf("%s:%d", partsRouterAddr[0], portInt+1)
+
 	fmt.Print("Enter the number of times to send: ")
 	scanner.Scan()
 	times, err := strconv.Atoi(scanner.Text())
@@ -144,6 +158,19 @@ func testRegisterDynamicKeyValueRouting(endPoint *endPoint.EndPoint, client *pb.
 	fmt.Print("Enter the dynamicValue: ")
 	scanner.Scan()
 	dynamicValue := scanner.Text()
+
+	partsRouterAddr := strings.Split(dynamicValue, ":")
+	if len(partsRouterAddr) != 2 {
+		log.Printf("Wrong fomat for 'ip:port'")
+		return
+	}
+	portInt, err := strconv.Atoi(partsRouterAddr[1])
+	if err != nil {
+		log.Printf("Wrong port")
+		return
+	}
+	dynamicValue = fmt.Sprintf("%s:%d", partsRouterAddr[0], portInt+1)
+
 	fmt.Print("Enter the timeout: ")
 	scanner.Scan()
 	timeout, err := strconv.Atoi(scanner.Text())
