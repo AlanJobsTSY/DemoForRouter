@@ -12,7 +12,7 @@ num_executions=100
 # 服务器的其他参数
 name="E"
 ip=$(hostname -I | awk '{print $1}')
-weight=5
+weight=1
 
 for ((i=1; i<=num_executions; i++))
 do
