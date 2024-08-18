@@ -7,7 +7,7 @@ executable="go run ./server/server.go"
 initial_port=40000
 
 # 执行次数
-num_executions=200
+num_executions=100
 
 # 服务器的其他参数
 name="C"
