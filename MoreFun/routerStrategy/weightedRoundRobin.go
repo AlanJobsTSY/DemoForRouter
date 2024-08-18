@@ -13,8 +13,8 @@ var initTime int = rand.Intn(100)
 
 func weightedRoundRobin(myServicesStorage *ServicesStorage, svrName string) string {
 	var addr string = ""
-	myServicesStorage.RLock()
-	defer myServicesStorage.RUnlock()
+	myServicesStorage.Lock()
+	defer myServicesStorage.Unlock()
 	if instances, ok := myServicesStorage.ServicesStorage[svrName]; ok && len(instances) > 0 {
 		totalWeight := 0
 		if myServicesStorage.CurrentWeight[svrName] == nil {

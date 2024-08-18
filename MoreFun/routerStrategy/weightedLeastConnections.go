@@ -13,8 +13,8 @@ import (
 func weightedLeastConnections(myServicesStorage *ServicesStorage, svrName string) string {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
-	myServicesStorage.RLock()
-	defer myServicesStorage.RUnlock()
+	myServicesStorage.Lock()
+	defer myServicesStorage.Unlock()
 	var addr string
 	if instances, ok := myServicesStorage.ServicesStorage[svrName]; ok && len(instances) > 0 {
 		minnConn := math.MaxInt
