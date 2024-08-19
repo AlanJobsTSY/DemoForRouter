@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -37,7 +38,7 @@ func weightedLeastConnections(myServicesStorage *ServicesStorage, svrName string
 		parts[6] = strconv.Itoa(minnConn + 1)
 		// 将 parts 切片重新拼接成字符串
 		newValue := strings.Join(parts, ":")
-		//log.Printf(newValue)
+		log.Printf(addr)
 		_, err := cli.Put(context.Background(), key, newValue, clientv3.WithIgnoreLease())
 		if err != nil {
 			fmt.Println("Failed to update etcd:", err)

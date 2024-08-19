@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98e906f9-a4bc-4d54-9af2-bea057ca38b2" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/routerStrategy/leastConnections.go" beforeDir="false" afterPath="$PROJECT_DIR$/routerStrategy/leastConnections.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/routerStrategy/weightedLeastConnections.go" beforeDir="false" afterPath="$PROJECT_DIR$/routerStrategy/weightedLeastConnections.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
