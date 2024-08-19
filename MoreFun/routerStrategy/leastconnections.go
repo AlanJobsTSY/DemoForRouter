@@ -25,6 +25,7 @@ func leastConnections(myServicesStorage *ServicesStorage, svrName string) string
 			partConn, _ := strconv.Atoi(parts[6])
 			if minnConn >= partConn {
 				minnConn = partConn
+				log.Printf("%s", instances)
 				addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
 				key = k
 			}
