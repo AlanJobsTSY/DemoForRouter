@@ -25,7 +25,6 @@ func leastConnections(myServicesStorage *ServicesStorage, svrName string) string
 			partConn, _ := strconv.Atoi(parts[6])
 			if minnConn >= partConn {
 				minnConn = partConn
-				log.Printf("%s", instances)
 				addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
 				key = k
 			}
@@ -37,6 +36,7 @@ func leastConnections(myServicesStorage *ServicesStorage, svrName string) string
 		// 将 parts 切片重新拼接成字符串
 		newValue := strings.Join(parts, ":")
 		log.Printf("%d:%d", minnConn, parts[6])
+		log.Printf("%s    %s", key, newValue)
 		_, err := cli.Put(context.Background(), key, newValue, clientv3.WithIgnoreLease())
 		if err != nil {
 			fmt.Println("Failed to update etcd:", err)
