@@ -151,7 +151,11 @@ exit 								#退出灵活测试
 
 基本测试已经完成了，如果想要测试服务掉线后状态维护，两种方法：
 
-1. 直接kill掉对应服务的`sidecar`和`server`
+1. 直接执行`Kill_SvrAndSidecar.sh`kill掉对应服务的`sidecar`和`server`
+
+   >      ```bash
+   >      bash ./Kill_SvrAndSidecar.sh 30016		#kill掉输入指定server端口的server和他的sidecar
+   >      ```
 
 2. 独立启动服务按`Ctrl+C`中断，如执行多条类似 `go run ./server/server.go --name A --port 40002 --test=false`，这种方式的好处是更容易看到消息发给了哪个服务器
 

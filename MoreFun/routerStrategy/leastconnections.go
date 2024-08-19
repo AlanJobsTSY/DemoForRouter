@@ -13,8 +13,8 @@ import (
 func leastConnections(myServicesStorage *ServicesStorage, svrName string) string {
 	cli := etcd.NewEtcdCli()
 	defer cli.Close()
-	myServicesStorage.RLock()
-	defer myServicesStorage.RUnlock()
+	myServicesStorage.Lock()
+	defer myServicesStorage.Unlock()
 	minnConn := math.MaxInt
 	var addr string
 	var key string
