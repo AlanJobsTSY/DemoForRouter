@@ -2,11 +2,66 @@
 
 MiniGameRouter是一个基于 gRPC、Etcd、sidecar架构的微服务路由器示例项目。该项目展示了如何使用 gRPC 实现服务注册、服务发现以及简单的服务调用。
 
-## 背景
+## 一、背景
 
 在微服务架构中，服务注册和发现是非常重要的功能。MiniGameRouter 项目展示了如何使用 gRPC 实现这些功能，并提供了一个简单的示例服务。
+## 二、项目架构
 
-## 体验流程
+```bash
+.
+├── etcd-config								#文件配置
+│   ├── docker-compose.yml					#kafaka配置
+│   ├── etcd0.yaml
+│   ├── etcd1.yaml
+│   └── etcd2.yaml
+├── MoreFun
+│   ├── cpu.pprof
+│   ├── endPoint
+│   │   └── endpoint.go
+│   ├── etcd								# etcd相关代码			
+│   │   └── etcd.go							# etcd客户端相关配置
+│   ├── go.mod
+│   ├── go.sum
+│   ├── Kill_SvrAndSidecar.sh
+│   ├── nameServer
+│   │   └── nameServer.go
+│   ├── proto								# gRPC 协议文件和生成的代码
+│   │   ├── minigame_router_grpc.pb.go
+│   │   ├── minigame_router.pb.go
+│   │   └── minigame_router.proto			# Protocol Buffers 定义文件
+│   ├── routerStrategy 						# 路由策略相关代码
+│   │   ├── config.go						# 路由策略配置、存储数据结构
+│   │   ├── consistentHash.go
+│   │   ├── fastestResponse.go
+│   │   ├── leastconnections.go
+│   │   ├── random.go
+│   │   ├── strategy.go						#路由选择的入口
+│   │   ├── weightedLeastConnections.go
+│   │   └── weightedRoundRobin.go
+│   ├── SDK
+│   │   ├── sdk.go
+│   │   └── test.go							#测试函数的入口
+│   ├── server
+│   │   └── server.go
+│   ├── server.pprof
+│   ├── sidecar
+│   │   └── sidecar.go
+│   ├── sidecar.pprof
+│   ├── Start_All_Svr.sh					#启动全体服务器的脚本
+│   ├── Start_A.sh
+│   ├── Start_B.sh
+│   ├── Start_C.sh
+│   ├── Start_D.sh
+│   ├── Start_E.sh
+│   └── Start_F.sh
+├── pic
+│   └── etcd集群.png
+├── QuickStart.md
+├── README.md
+└── StartMQ.sh
+```
+
+## 三、体验流程（详情请看QuickStart）
 
 ### 1.在个人服务器使用docker部署一个Etcd集群
 
@@ -46,57 +101,13 @@ etcdctl endpoint status --cluster -w table
  go get google.golang.org/grpc@latest
 ```
 
-只支持`A`,`B`,`C`,`D`作为服务名字，同`ip`的`port`需要间隔两个启动（如`--port 50050` 下一个需要`--port 50052`）
-
-``` bash
-go run .\server\server.go --name A  --ip "服务器地址,默认localhost" --port 50050 --weight 1 
-```
+详情请看QuickStart
 
 ### 3. 服务请求调用
 
-键入`A`,`B`,`C`,`D`,`[key]`请求各类服务
+详情请看QuickStart
 
-``` bash
-A "键入A则使用一致性哈希算法访问A类服务器"
-B "键入B则使用随机算法访问B类服务器"
-C "键入C则使用平滑权重轮询算法访问C类服务器"
-D "键入D则使用最少连接数路由算法访问D类服务器"
-[key] "键入[key]则实现动态键值路由访问[endpoint]服务器（timeout时间内）"
-```
-
-键入 `[任意字符串]  ip:port`实现固定键值路由
-
-``` bash
-[svrName] localhost:50050 "前者任意字符串，后者为点对点路由地址"
-```
-
-键入`set`然后键入`key endpoints timeout`设定动态键值路由
-
-``` bash
-set
-[key] [endpoints] timeout "如 `tsy localhost:50050 60`,60秒为动态键值持续时间，可被覆盖"
-```
-
-## 项目细节
-
-```bash
-MoreFun
-├── etcd                    # etcd相关代码
-│   └── etcd.go             	# etcd 相关配置
-├── go.mod                  
-├── go.sum                 
-├── proto                   # gRPC 协议文件和生成的代码
-│   ├── minigame_router_grpc.pb.go  # gRPC 服务代码
-│   ├── minigame_router.pb.go       # Protocol Buffers 代码
-│   └── minigame_router.proto       # Protocol Buffers 定义文件
-├── routerStrategy          # 路由策略相关代码
-│   ├── config.go           	# 路由策略配置、存储数据结构
-│   └── strategy.go         	# 路由策略实现
-├── server                  # 服务器相关代码
-│   └── server.go           	# 服务器实现
-└── sidecar                 # Sidecar 相关代码
-	└── sidecar.go          	# Sidecar 实现
-```
+## 四、部分文件的函数介绍（old）
 
 ### 1. minigame_router.proto
 
