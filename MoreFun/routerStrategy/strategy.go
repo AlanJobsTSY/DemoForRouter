@@ -1,11 +1,9 @@
 package routerStrategy
 
-import "log"
-
 // GetAddr 根据服务配置选择路由策略，返回服务地址
 func GetAddr(myServicesStorage *ServicesStorage, svrConfig *ServiceConfig, fromServer string, status string) string {
 	var addr string = ""
-	log.Printf("%s", svrConfig.Strategy)
+	//log.Printf("%s", svrConfig.Strategy)
 	switch svrConfig.Strategy {
 	case ConsistentHash:
 		addr = consistentHash(myServicesStorage, fromServer, status)

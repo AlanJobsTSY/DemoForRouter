@@ -321,7 +321,7 @@ func storageInit(ctx context.Context, cli *clientv3.Client, reqToMsg string) {
 			for _, kv := range getRes.Kvs {
 				myServicesStorage.ServicesStorage[reqToMsg][string(kv.Key)] = string(kv.Value)
 				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[reqToMsg].Strategy {
-					log.Printf("%s,%s", string(kv.Key), string(kv.Value))
+					//log.Printf("%s,%s", string(kv.Key), string(kv.Value))
 					myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
 
 				}
@@ -376,7 +376,7 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			startTime = time.Now()
 			//路由选择
 			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
-			log.Printf("%s", addr)
+			//log.Printf("%s", addr)
 			// 记录结束时间
 			endTime = time.Now()
 			// 计算执行时间（以μ秒为单位）
