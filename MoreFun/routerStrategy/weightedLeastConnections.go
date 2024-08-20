@@ -26,7 +26,9 @@ func weightedLeastConnections(myServicesStorage *ServicesStorage, svrName string
 			partConn, _ := strconv.Atoi(parts[6])
 			partWeight, _ := strconv.Atoi(parts[4])
 			log.Printf("%d %d %d %d", minnConn, minnWeight, partConn, partWeight)
+			log.Printf("%d %d", minnConn*partWeight, partConn*minnWeight)
 			if minnConn*partWeight >= partConn*minnWeight {
+				log.Printf("change")
 				minnConn = partConn
 				minnWeight = partWeight
 				addr = fmt.Sprintf("%s:%s", parts[1], parts[2])
