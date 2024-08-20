@@ -375,6 +375,7 @@ func (s *MiniGameRouterServer) DiscoverService(ctx context.Context, req *pb.Disc
 			startTime = time.Now()
 			//路由选择
 			addr = routerStrategy.GetAddr(myServicesStorage, config, req.FromMsg, req.Status)
+			log.Printf("%s", addr)
 			// 记录结束时间
 			endTime = time.Now()
 			// 计算执行时间（以μ秒为单位）
