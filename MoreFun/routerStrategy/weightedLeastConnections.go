@@ -18,7 +18,7 @@ func weightedLeastConnections(myServicesStorage *ServicesStorage, svrName string
 	var addr string
 	if instances, ok := myServicesStorage.ServicesStorage[svrName]; ok && len(instances) > 0 {
 		minnConn := math.MaxInt
-		minnWeight := 0
+		minnWeight := 1
 		var key string
 		for k, v := range instances {
 			parts := strings.Split(v, ":")
