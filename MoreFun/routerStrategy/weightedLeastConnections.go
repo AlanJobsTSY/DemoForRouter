@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ func weightedLeastConnections(myServicesStorage *ServicesStorage, svrName string
 			parts := strings.Split(v, ":")
 			partConn, _ := strconv.Atoi(parts[6])
 			partWeight, _ := strconv.Atoi(parts[4])
+			log.Printf("%d %d %d %d", minnConn, minnWeight, partConn, partWeight)
 			if minnConn*partWeight >= partConn*minnWeight {
 				minnConn = partConn
 				minnWeight = partWeight
