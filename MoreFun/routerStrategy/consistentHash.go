@@ -69,5 +69,6 @@ func (ss *ServicesStorage) getNode(svrName string) string {
 func consistentHash(myServicesStorage *ServicesStorage, svrName string, status string) string {
 	var addr string = ""
 	addr = myServicesStorage.getNode(svrName)
+	log.Printf("why %s", addr)
 	return addr
 }
