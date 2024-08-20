@@ -3,6 +3,7 @@ package routerStrategy
 import (
 	"fmt"
 	"hash/fnv"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,6 +32,7 @@ func hashCode(virtualNodeKey string) int {
 
 // 插入节点
 func (ss *ServicesStorage) AddNode(svrName string, ip string) {
+	log.Printf("????")
 	parts := strings.Split(ip, ":")
 	ip = fmt.Sprintf("%s:%s", parts[1], parts[2])
 	node := newNode(ip)
