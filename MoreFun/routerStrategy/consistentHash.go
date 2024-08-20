@@ -32,9 +32,10 @@ func hashCode(virtualNodeKey string) int {
 
 // 插入节点
 func (ss *ServicesStorage) AddNode(svrName string, ip string) {
-	log.Printf("????")
+
 	parts := strings.Split(ip, ":")
 	ip = fmt.Sprintf("%s:%s", parts[1], parts[2])
+	log.Printf("????  %s", ip)
 	node := newNode(ip)
 	for i := 0; i < VirtualNodeNoPerNode; i++ {
 		virtualKey := hashCode(svrName + strconv.Itoa(i))
