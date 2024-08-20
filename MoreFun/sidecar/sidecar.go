@@ -321,8 +321,9 @@ func storageInit(ctx context.Context, cli *clientv3.Client, reqToMsg string) {
 			for _, kv := range getRes.Kvs {
 				myServicesStorage.ServicesStorage[reqToMsg][string(kv.Key)] = string(kv.Value)
 				if routerStrategy.ConsistentHash == routerStrategy.ServiceConfigs[reqToMsg].Strategy {
+					log.Printf("%s,%s", string(kv.Key), string(kv.Value))
 					myServicesStorage.AddNode(string(kv.Key), string(kv.Value))
-					//log.Printf("%s,%s", string(kv.Key), string(kv.Value))
+
 				}
 				if routerStrategy.Random == routerStrategy.ServiceConfigs[reqToMsg].Strategy {
 					myServicesStorage.AddRandom(string(kv.Key), string(kv.Value))
