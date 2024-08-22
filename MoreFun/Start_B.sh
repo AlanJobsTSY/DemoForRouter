@@ -4,7 +4,7 @@
 executable="go run ./server/server.go"
 
 # 初始参数
-initial_port=30000
+initial_port=35000
 
 # 执行次数
 num_executions=100
